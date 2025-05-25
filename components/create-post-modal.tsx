@@ -199,24 +199,13 @@ export function CreatePostModal({ userProfile, avatarImage, onClose, onAddPost, 
 
               <div className="flex-1 space-y-4">
                 <Textarea
-                  placeholder="Compartilhe algo interessante... (Cole links do YouTube diretamente aqui!)"
+                  placeholder="Compartilhe algo interessante... "
                   value={newPostContent}
                   onChange={(e) => handleContentChange(e.target.value)}
                   className="min-h-[120px] max-h-[200px] resize-none border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-xl"
                 />
 
-                {/* YouTube Detection Alert */}
-                {detectedYouTubeUrl && (
-                  <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-2xl p-4 border border-red-100">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Youtube className="w-5 h-5 text-red-600" />
-                      <span className="text-sm font-semibold text-red-700">Vídeo do YouTube detectado!</span>
-                    </div>
-                    <p className="text-sm text-red-600">
-                      Encontramos um link do YouTube no seu texto. O vídeo será exibido na aba "Posts".
-                    </p>
-                  </div>
-                )}
+            
 
                 {/* Media Preview */}
                 {newPostMedia && (
@@ -231,8 +220,8 @@ export function CreatePostModal({ userProfile, avatarImage, onClose, onAddPost, 
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900">
                         {newPostMediaType === "image" && "Imagem anexada"}
-                        {newPostMediaType === "video" && "Vídeo anexado (será exibido na aba Vídeos)"}
-                        {newPostMediaType === "youtube" && "Vídeo do YouTube (será exibido na aba Posts)"}
+                        {newPostMediaType === "video" && "Vídeo anexado"}
+                        {newPostMediaType === "youtube" && "Vídeo do YouTube"}
                       </p>
                       <p className="text-xs text-gray-500">
                         {videoDuration ? `Duração: ${videoDuration}` : "Clique em publicar para compartilhar"}

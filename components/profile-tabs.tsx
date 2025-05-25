@@ -26,8 +26,8 @@ export function ProfileTabs({ userPosts, userVideos, userProfile, avatarImage, o
     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
       <div className="flex items-center justify-between">
         <TabsList className="grid grid-cols-4 w-fit">
-          <TabsTrigger value="posts">Posts ({userPosts.length})</TabsTrigger>
-          <TabsTrigger value="videos">Vídeos ({userVideos.length})</TabsTrigger>
+          <TabsTrigger value="posts">Posts</TabsTrigger>
+          <TabsTrigger value="videos">Vídeos</TabsTrigger>
           <TabsTrigger value="collections">Coleções</TabsTrigger>
           <TabsTrigger value="achievements">Conquistas</TabsTrigger>
         </TabsList>

@@ -523,7 +523,7 @@ export function DouyinVideoModal({
                 </Badge>
                 <span className="text-gray-500 text-xs">{currentVideo.timestamp}</span>
               </div>
-              <p className="text-gray-600 text-xs">@{currentVideo.author?.username || userProfile.username}</p>
+              <p className="text-gray-600 text-xs">{currentVideo.author?.username || userProfile.username}</p>
             </div>
           </div>
           <p className="text-black text-sm leading-relaxed mb-3">{currentVideo.content}</p>
