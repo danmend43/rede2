@@ -4,66 +4,87 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const code = searchParams.get("code")
   const error = searchParams.get("error")
+  const state = searchParams.get("state")
+
+  console.log("🔍 Callback recebido:", { code: !!code, error, state })
+  console.log("🔍 Environment check:", {
+    hasClientId: !!process.env.SPOTIFY_CLIENT_ID,
+    hasClientSecret: !!process.env.SPOTIFY_CLIENT_SECRET,
+    clientIdLength: process.env.SPOTIFY_CLIENT_ID?.length || 0,
+  })
 
   if (error) {
-    return NextResponse.redirect(new URL("/?error=access_denied", request.url))
+    console.error("❌ Erro do Spotify:", error)
+    return NextResponse.redirect(new URL(`/?error=${error}`, request.url))
   }
 
   if (!code) {
+    console.error("❌ Código não encontrado")
     return NextResponse.redirect(new URL("/?error=no_code", request.url))
   }
 
   try {
+    const clientId = process.env.SPOTIFY_CLIENT_ID
+    const clientSecret = process.env.SPOTIFY_CLIENT_SECRET
+    const redirectUri = "https://rede2-ivory.vercel.app/api/spotify/callback"
+
+    console.log("🔍 Iniciando troca de código por token...")
+    console.log("🔍 Client ID:", clientId ? `${clientId.substring(0, 8)}...` : "MISSING")
+    console.log("🔍 Client Secret:", clientSecret ? "PRESENT" : "MISSING")
+
+    if (!clientSecret || !clientId) {
+      console.error("❌ Variáveis de ambiente não encontradas!")
+      console.error("❌ SPOTIFY_CLIENT_ID:", clientId ? "PRESENT" : "MISSING")
+      console.error("❌ SPOTIFY_CLIENT_SECRET:", clientSecret ? "PRESENT" : "MISSING")
+      return NextResponse.redirect(new URL("/?error=missing_env_vars&details=client_id_or_secret_missing", request.url))
+    }
+
     const tokenResponse = await fetch("https://accounts.spotify.com/api/token", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Basic ${Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`).toString("base64")}`,
+        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
       },
       body: new URLSearchParams({
         grant_type: "authorization_code",
-        code,
-        redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/spotify/callback`,
+        code: code,
+        redirect_uri: redirectUri,
       }),
     })
 
+    const tokenData = await tokenResponse.json()
+    console.log("🔍 Token response status:", tokenResponse.status)
+
     if (!tokenResponse.ok) {
-      throw new Error("Failed to exchange code for token")
+      console.error("❌ Erro ao trocar código por token:", tokenData)
+      return NextResponse.redirect(
+        new URL(`/?error=token_exchange_failed&details=${encodeURIComponent(JSON.stringify(tokenData))}`, request.url),
+      )
     }
 
-    const tokens = await tokenResponse.json()
-
-    // Get user profile
-    const profileResponse = await fetch("https://api.spotify.com/v1/me", {
-      headers: {
-        Authorization: `Bearer ${tokens.access_token}`,
-      },
-    })
-
-    if (!profileResponse.ok) {
-      throw new Error("Failed to get user profile")
+    if (!tokenData.access_token) {
+      console.error("❌ Access token não recebido")
+      return NextResponse.redirect(
+        new URL(`/?error=no_access_token&details=${encodeURIComponent(JSON.stringify(tokenData))}`, request.url),
+      )
     }
 
-    const profile = await profileResponse.json()
-
-    // In a real app, you'd store these tokens securely (database, encrypted cookies, etc.)
-    // For this demo, we'll redirect with the data as URL params (not recommended for production)
-    const userData = {
-      id: profile.id,
-      name: profile.display_name,
-      email: profile.email,
-      image: profile.images?.[0]?.url,
-      followers: profile.followers?.total || 0,
-      access_token: tokens.access_token,
-      refresh_token: tokens.refresh_token,
-    }
-
+    // Redireciona de volta com o token
     const redirectUrl = new URL("/", request.url)
-    redirectUrl.searchParams.set("spotify_data", Buffer.from(JSON.stringify(userData)).toString("base64"))
+    redirectUrl.searchParams.set("access_token", tokenData.access_token)
+    redirectUrl.searchParams.set("token_type", tokenData.token_type || "Bearer")
+    redirectUrl.searchParams.set("expires_in", (tokenData.expires_in || 3600).toString())
 
+    if (tokenData.refresh_token) {
+      redirectUrl.searchParams.set("refresh_token", tokenData.refresh_token)
+    }
+
+    console.log("✅ Token obtido com sucesso!")
     return NextResponse.redirect(redirectUrl)
   } catch (error) {
-    console.error("Spotify callback error:", error)
-    return NextResponse.redirect(new URL("/?error=callback_failed", request.url))
+    console.error("❌ Erro no callback:", error)
+    return NextResponse.redirect(
+      new URL(`/?error=callback_error&details=${encodeURIComponent(String(error))}`, request.url),
+    )
   }
 }
