@@ -118,6 +118,14 @@ export default function ProfilePage() {
       setIsSpotifyConnected(true)
       fetchSpotifyUser(savedToken)
       fetchCurrentTrack(savedToken)
+
+      // Configura intervalo para verificar música atual a cada 5 segundos
+      const interval = setInterval(() => {
+        fetchCurrentTrack(savedToken)
+      }, 5000)
+
+      // Cleanup do intervalo quando o componente for desmontado
+      return () => clearInterval(interval)
     }
 
     // Verifica se voltou do callback com token
@@ -130,7 +138,15 @@ export default function ProfilePage() {
       setIsSpotifyConnected(true)
       fetchSpotifyUser(accessToken)
       fetchCurrentTrack(accessToken)
+
+      // Configura intervalo para o novo token também
+      const interval = setInterval(() => {
+        fetchCurrentTrack(accessToken)
+      }, 5000)
+
       window.history.replaceState({}, document.title, window.location.pathname)
+
+      return () => clearInterval(interval)
     }
   }, [])
 
@@ -177,67 +193,67 @@ export default function ProfilePage() {
   const collections = []
   const achievements = [
     {
-      name: "First Million",
-      description: "First video to reach 1M views",
+      name: "Primeiro Milhão",
+      description: "Primeiro vídeo a alcançar 1M de visualizações",
       icon: Trophy,
-      date: "January 2024",
-      rarity: "legendary",
+      date: "Janeiro 2024",
+      rarity: "lendário",
       unlocked: true,
     },
     {
-      name: "Consistent Creator",
-      description: "100 videos published",
+      name: "Criador Consistente",
+      description: "100 vídeos publicados",
       icon: Upload,
-      date: "December 2023",
-      rarity: "epic",
+      date: "Dezembro 2023",
+      rarity: "épico",
       unlocked: true,
     },
     {
-      name: "Active Community",
-      description: "10K comments replied",
+      name: "Comunidade Ativa",
+      description: "10K comentários respondidos",
       icon: MessageCircle,
-      date: "November 2023",
-      rarity: "rare",
+      date: "Novembro 2023",
+      rarity: "raro",
       unlocked: true,
     },
     {
-      name: "Trending Master",
-      description: "10 videos in trending",
+      name: "Mestre dos Trends",
+      description: "10 vídeos em alta",
       icon: TrendingUp,
-      date: "October 2023",
-      rarity: "epic",
+      date: "Outubro 2023",
+      rarity: "épico",
       unlocked: false,
     },
     {
-      name: "Viral Sensation",
-      description: "Video with 10M views",
+      name: "Sensação Viral",
+      description: "Vídeo com 10M de visualizações",
       icon: Star,
-      date: "Locked",
-      rarity: "legendary",
+      date: "Bloqueado",
+      rarity: "lendário",
       unlocked: false,
     },
     {
-      name: "Speed Creator",
-      description: "10 videos in one week",
+      name: "Criador Veloz",
+      description: "10 vídeos em uma semana",
       icon: Zap,
-      date: "Locked",
-      rarity: "common",
+      date: "Bloqueado",
+      rarity: "comum",
       unlocked: false,
     },
     {
-      name: "Social Butterfly",
-      description: "1000 followers reached",
+      name: "Borboleta Social",
+      description: "1000 seguidores alcançados",
       icon: Users,
-      date: "September 2023",
-      rarity: "common",
+      date: "Setembro 2023",
+      rarity: "comum",
       unlocked: true,
     },
     {
-      name: "Night Owl",
-      description: "Post at 3 AM",
+      name: "Coruja Noturna",
+      description: "Postar às 3 da manhã",
       icon: Eye,
-      date: "August 2023",
-      rarity: "rare",
+      date: "Agosto 2023",
+      rarity: "raro",
       unlocked: true,
     },
   ]
@@ -560,9 +576,18 @@ export default function ProfilePage() {
 
       if (response.ok && response.status !== 204) {
         const data = await response.json()
-        if (data && data.item) {
+        if (data && data.item && data.is_playing) {
           setCurrentSpotifyTrack(data.item)
+        } else {
+          // Se não há música tocando, limpa o estado
+          setCurrentSpotifyTrack(null)
         }
+      } else if (response.status === 204) {
+        // 204 significa que não há música tocando
+        setCurrentSpotifyTrack(null)
+      } else if (response.status === 401) {
+        // Token expirado, desconecta
+        handleSpotifyDisconnect()
       }
     } catch (error) {
       console.error("Erro ao buscar música atual:", error)
@@ -610,11 +635,11 @@ export default function ProfilePage() {
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
-      case "legendary":
+      case "lendário":
         return "border-yellow-500 bg-gradient-to-br from-yellow-50 to-orange-50"
-      case "epic":
+      case "épico":
         return "border-purple-500 bg-gradient-to-br from-purple-50 to-pink-50"
-      case "rare":
+      case "raro":
         return "border-blue-500 bg-gradient-to-br from-blue-50 to-cyan-50"
       default:
         return "border-gray-300 bg-gray-50"
@@ -623,11 +648,11 @@ export default function ProfilePage() {
 
   const getRarityGlow = (rarity: string) => {
     switch (rarity) {
-      case "legendary":
+      case "lendário":
         return "shadow-yellow-200"
-      case "epic":
+      case "épico":
         return "shadow-purple-200"
-      case "rare":
+      case "raro":
         return "shadow-blue-200"
       default:
         return ""
@@ -639,15 +664,21 @@ export default function ProfilePage() {
       name: "YouTube",
       icon: Youtube,
       color: "text-red-600",
-      connected: true,
+      connected: false,
       onToggle: () => console.log("Toggle YouTube"),
     },
     {
       name: "Spotify",
       icon: Music,
       color: "text-green-600",
-      connected: false,
-      onToggle: () => console.log("Toggle Spotify"),
+      connected: isSpotifyConnected,
+      onToggle: () => {
+        if (isSpotifyConnected) {
+          handleSpotifyDisconnect()
+        } else {
+          handleSpotifyConnect()
+        }
+      },
     },
     {
       name: "Discord",
@@ -932,10 +963,10 @@ export default function ProfilePage() {
 
             {/* Right Column - Sidebar */}
             <div className="lg:w-80 space-y-6" style={{ marginTop: "10px" }}>
-              {/* Spotify Section */}
-              <Card className="bg-white border border-gray-200">
-                <CardContent className="p-3">
-                  {isSpotifyConnected && currentSpotifyTrack ? (
+              {/* Spotify Section - só mostra quando há música tocando */}
+              {isSpotifyConnected && currentSpotifyTrack && (
+                <Card className="bg-white border border-gray-200">
+                  <CardContent className="p-3">
                     <div className="flex items-center gap-2">
                       <img
                         src={currentSpotifyTrack.album?.images?.[2]?.url || "/placeholder.svg"}
@@ -953,38 +984,9 @@ export default function ProfilePage() {
                         <Music className="w-4 h-4 text-green-500" />
                       </div>
                     </div>
-                  ) : isSpotifyConnected ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
-                        <Music className="w-5 h-5 text-gray-400" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900 text-sm">Nenhuma música tocando</p>
-                        <p className="text-xs text-gray-600">Conectado ao Spotify</p>
-                      </div>
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
-                        <Music className="w-5 h-5 text-gray-400" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900 text-sm">Conectar Spotify</p>
-                        <p className="text-xs text-gray-600">Para mostrar música atual</p>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={handleSpotifyConnect}
-                        className="text-green-600 hover:text-green-700 p-1"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </div>
@@ -1490,11 +1492,11 @@ export default function ProfilePage() {
                               <div
                                 className={`w-16 h-16 rounded-full flex items-center justify-center ${
                                   achievement.unlocked
-                                    ? achievement.rarity === "legendary"
+                                    ? achievement.rarity === "lendário"
                                       ? "bg-gradient-to-br from-yellow-400 to-orange-500"
-                                      : achievement.rarity === "epic"
+                                      : achievement.rarity === "épico"
                                         ? "bg-gradient-to-br from-purple-500 to-pink-500"
-                                        : achievement.rarity === "rare"
+                                        : achievement.rarity === "raro"
                                           ? "bg-gradient-to-br from-blue-500 to-cyan-500"
                                           : "bg-gradient-to-br from-gray-400 to-gray-500"
                                     : "bg-gray-300"
@@ -1522,11 +1524,11 @@ export default function ProfilePage() {
                                 </h3>
                                 <span
                                   className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                    achievement.rarity === "legendary"
+                                    achievement.rarity === "lendário"
                                       ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
-                                      : achievement.rarity === "epic"
+                                      : achievement.rarity === "épico"
                                         ? "bg-purple-100 text-purple-700 border border-purple-300"
-                                        : achievement.rarity === "rare"
+                                        : achievement.rarity === "raro"
                                           ? "bg-blue-100 text-blue-700 border border-blue-300"
                                           : "bg-gray-100 text-gray-700 border border-gray-300"
                                   }`}
@@ -1549,11 +1551,11 @@ export default function ProfilePage() {
                                 </span>
                                 {achievement.unlocked ? (
                                   <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded-full">
-                                    Unlocked
+                                    Desbloqueada
                                   </span>
                                 ) : (
                                   <span className="text-xs text-gray-400 font-medium bg-gray-100 px-2 py-1 rounded-full">
-                                    Locked
+                                    Bloqueada
                                   </span>
                                 )}
                               </div>
@@ -2065,7 +2067,6 @@ export default function ProfilePage() {
                       setUseBlurredAvatar(false)
                       setBlurAmount(10)
                     }}
-                    className="text-gray-500 hover:text-gray-700"
                   >
                     <X className="w-5 h-5" />
                   </Button>
