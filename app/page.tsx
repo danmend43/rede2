@@ -55,7 +55,6 @@ import {
   Paintbrush,
   Wifi,
   Shield,
-  Check,
   ExternalLink,
   AlertCircle,
 } from "lucide-react"
@@ -160,72 +159,7 @@ export default function ProfilePage() {
   ])
 
   // Conquistas
-  const achievements = [
-    {
-      name: "Primeiro Milhão",
-      description: "Primeiro vídeo a alcançar 1M de visualizações",
-      icon: Trophy,
-      date: "Janeiro 2024",
-      rarity: "lendário",
-      unlocked: true,
-    },
-    {
-      name: "Criador Consistente",
-      description: "100 vídeos publicados",
-      icon: Upload,
-      date: "Dezembro 2023",
-      rarity: "épico",
-      unlocked: true,
-    },
-    {
-      name: "Comunidade Ativa",
-      description: "10K comentários respondidos",
-      icon: MessageCircle,
-      date: "Novembro 2023",
-      rarity: "raro",
-      unlocked: true,
-    },
-    {
-      name: "Mestre dos Trends",
-      description: "10 vídeos em alta",
-      icon: TrendingUp,
-      date: "Outubro 2023",
-      rarity: "épico",
-      unlocked: false,
-    },
-    {
-      name: "Sensação Viral",
-      description: "Vídeo com 10M de visualizações",
-      icon: Star,
-      date: "Bloqueado",
-      rarity: "lendário",
-      unlocked: false,
-    },
-    {
-      name: "Criador Veloz",
-      description: "10 vídeos em uma semana",
-      icon: Zap,
-      date: "Bloqueado",
-      rarity: "comum",
-      unlocked: false,
-    },
-    {
-      name: "Borboleta Social",
-      description: "1000 seguidores alcançados",
-      icon: Users,
-      date: "Setembro 2023",
-      rarity: "comum",
-      unlocked: true,
-    },
-    {
-      name: "Coruja Noturna",
-      description: "Postar às 3 da manhã",
-      icon: Eye,
-      date: "Agosto 2023",
-      rarity: "raro",
-      unlocked: true,
-    },
-  ]
+  const achievements = []
 
   // Categorias e dados
   const categories = ["Pessoal", "Anime", "Tecnologia", "Jogos", "Culinária", "Música", "Arte"]
@@ -1561,103 +1495,11 @@ export default function ProfilePage() {
             {/* Achievements Tab */}
             <TabsContent value="achievements">
               <div className="min-h-[400px]">
-                {achievements.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {achievements.map((achievement, index) => (
-                      <Card
-                        key={index}
-                        className={`overflow-hidden transition-all duration-300 border-2 ${
-                          achievement.unlocked
-                            ? `hover:shadow-xl transform hover:scale-105 ${getRarityColor(achievement.rarity)} ${getRarityGlow(achievement.rarity)}`
-                            : "border-gray-200 bg-gray-50 opacity-70"
-                        }`}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex flex-col items-center text-center space-y-3">
-                            <div className="relative">
-                              <div
-                                className={`w-16 h-16 rounded-full flex items-center justify-center ${
-                                  achievement.unlocked
-                                    ? achievement.rarity === "lendário"
-                                      ? "bg-gradient-to-br from-yellow-400 to-orange-500"
-                                      : achievement.rarity === "épico"
-                                        ? "bg-gradient-to-br from-purple-500 to-pink-500"
-                                        : achievement.rarity === "raro"
-                                          ? "bg-gradient-to-br from-blue-500 to-cyan-500"
-                                          : "bg-gradient-to-br from-gray-400 to-gray-500"
-                                    : "bg-gray-300"
-                                } shadow-lg`}
-                              >
-                                <achievement.icon
-                                  className={`w-8 h-8 ${achievement.unlocked ? "text-white" : "text-gray-500"}`}
-                                />
-                              </div>
-                              {achievement.unlocked && (
-                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-white">
-                                  <Check className="w-3 h-3 text-white" />
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-center gap-2">
-                                <h3
-                                  className={`font-bold text-sm ${
-                                    achievement.unlocked ? "text-gray-900" : "text-gray-500"
-                                  }`}
-                                >
-                                  {achievement.name}
-                                </h3>
-                                <span
-                                  className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                    achievement.rarity === "lendário"
-                                      ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
-                                      : achievement.rarity === "épico"
-                                        ? "bg-purple-100 text-purple-700 border border-purple-300"
-                                        : achievement.rarity === "raro"
-                                          ? "bg-blue-100 text-blue-700 border border-blue-300"
-                                          : "bg-gray-100 text-gray-700 border border-gray-300"
-                                  }`}
-                                >
-                                  {achievement.rarity}
-                                </span>
-                              </div>
-
-                              <p
-                                className={`text-xs leading-relaxed ${
-                                  achievement.unlocked ? "text-gray-600" : "text-gray-400"
-                                }`}
-                              >
-                                {achievement.description}
-                              </p>
-
-                              <div className="flex items-center justify-between pt-2">
-                                <span className={`text-xs ${achievement.unlocked ? "text-gray-500" : "text-gray-400"}`}>
-                                  {achievement.date}
-                                </span>
-                                {achievement.unlocked ? (
-                                  <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded-full">
-                                    Desbloqueada
-                                  </span>
-                                ) : (
-                                  <span className="text-xs text-gray-400 font-medium bg-gray-100 px-2 py-1 rounded-full">
-                                    Bloqueada
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-96 text-gray-500">
-                    <Trophy className="w-16 h-16 mb-4 text-gray-300" />
-                    <h3 className="text-lg font-medium mb-2">Nenhuma conquista ainda</h3>
-                    <p className="text-sm text-center">Continue criando conteúdo para desbloquear conquistas!</p>
-                  </div>
-                )}
+                <div className="flex flex-col items-center justify-center h-96 text-gray-500">
+                  <Trophy className="w-16 h-16 mb-4 text-gray-300" />
+                  <h3 className="text-lg font-medium mb-2">Em breve</h3>
+                  <p className="text-sm text-center">Sistema de conquistas chegando em breve!</p>
+                </div>
               </div>
             </TabsContent>
           </Tabs>
