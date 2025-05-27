@@ -6,8 +6,8 @@ import "./globals.css"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Bilibili - Perfil do Usuário",
-  description: "Plataforma de compartilhamento de conteúdo",
+  title: "Spotify Music Profile",
+  description: "Your personal music profile powered by Spotify",
     generator: 'v0.dev'
 }
 
@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="pt-BR">
+    <html lang="en">
       <body className={inter.className}>{children}</body>
     </html>
   )
