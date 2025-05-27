@@ -6,8 +6,9 @@ import "./globals.css"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Rede",
-  description: "Rede"
+  title: "Bilibili - Perfil do Usuário",
+  description: "Plataforma de compartilhamento de conteúdo",
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({
