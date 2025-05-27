@@ -57,6 +57,7 @@ import {
   Shield,
   Check,
   ExternalLink,
+  AlertCircle,
 } from "lucide-react"
 
 export default function ProfilePage() {
@@ -104,6 +105,7 @@ export default function ProfilePage() {
   const [spotifyUser, setSpotifyUser] = useState<any>(null)
   const [currentSpotifyTrack, setCurrentSpotifyTrack] = useState<any>(null)
   const [isSpotifyConnected, setIsSpotifyConnected] = useState(false)
+  const [spotifyError, setSpotifyError] = useState<string | null>(null)
 
   // Estado do mega menu
   const [megaMenuDescription, setMegaMenuDescription] = useState("Descubra mais conteúdo incrível na nossa plataforma")
@@ -351,11 +353,42 @@ export default function ProfilePage() {
     // Verifica se voltou do callback com token
     const urlParams = new URLSearchParams(window.location.search)
     const accessToken = urlParams.get("access_token")
+    const refreshToken = urlParams.get("refresh_token")
+    const spotifyError = urlParams.get("spotify_error")
+
+    // Se há erro do Spotify
+    if (spotifyError) {
+      let errorMessage = "Erro ao conectar com o Spotify"
+      switch (spotifyError) {
+        case "access_denied":
+          errorMessage = "Acesso negado pelo usuário"
+          break
+        case "no_code":
+          errorMessage = "Código de autorização não recebido"
+          break
+        case "token_exchange_failed":
+          errorMessage = "Falha ao trocar código por token"
+          break
+        case "server_error":
+          errorMessage = "Erro interno do servidor"
+          break
+      }
+      setSpotifyError(errorMessage)
+
+      // Remove os parâmetros da URL
+      window.history.replaceState({}, document.title, window.location.pathname)
+      return
+    }
 
     if (accessToken) {
       localStorage.setItem("spotify_token", accessToken)
+      if (refreshToken) {
+        localStorage.setItem("spotify_refresh_token", refreshToken)
+      }
+
       setSpotifyToken(accessToken)
       setIsSpotifyConnected(true)
+      setSpotifyError(null)
       fetchSpotifyUser(accessToken)
       fetchCurrentTrack(accessToken)
 
@@ -363,6 +396,7 @@ export default function ProfilePage() {
         fetchCurrentTrack(accessToken)
       }, 5000)
 
+      // Remove os parâmetros da URL
       window.history.replaceState({}, document.title, window.location.pathname)
 
       return () => clearInterval(interval)
@@ -381,11 +415,16 @@ export default function ProfilePage() {
       if (response.ok) {
         const user = await response.json()
         setSpotifyUser(user)
+        setSpotifyError(null)
       } else {
-        handleSpotifyDisconnect()
+        console.error("Failed to fetch Spotify user:", response.status)
+        if (response.status === 401) {
+          handleSpotifyDisconnect()
+        }
       }
     } catch (error) {
       console.error("Erro ao buscar usuário Spotify:", error)
+      setSpotifyError("Erro ao conectar com o Spotify")
     }
   }
 
@@ -416,7 +455,7 @@ export default function ProfilePage() {
 
   const handleSpotifyConnect = () => {
     const clientId = "384115184ce848c1bf39bdd8d0209f83"
-    const redirectUri = "https://rede2-ivory.vercel.app/api/spotify/callback"
+    const redirectUri = `${window.location.origin}/api/spotify/callback`
 
     const scopes = [
       "user-read-playback-state",
@@ -440,11 +479,13 @@ export default function ProfilePage() {
 
   const handleSpotifyDisconnect = () => {
     localStorage.removeItem("spotify_token")
+    localStorage.removeItem("spotify_refresh_token")
     localStorage.removeItem("spotify_auth_state")
     setSpotifyToken(null)
     setSpotifyUser(null)
     setCurrentSpotifyTrack(null)
     setIsSpotifyConnected(false)
+    setSpotifyError(null)
   }
 
   // Funções utilitárias
@@ -744,6 +785,29 @@ export default function ProfilePage() {
         accept="image/*"
         className="hidden"
       />
+
+      {/* Spotify Error Notification */}
+      {spotifyError && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 shadow-lg">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+              <div className="flex-1">
+                <h4 className="text-sm font-medium text-red-800">Erro no Spotify</h4>
+                <p className="text-sm text-red-700 mt-1">{spotifyError}</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSpotifyError(null)}
+                className="text-red-600 hover:text-red-800 hover:bg-red-100"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
