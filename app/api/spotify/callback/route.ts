@@ -7,6 +7,11 @@ export async function GET(request: NextRequest) {
   const state = searchParams.get("state")
 
   console.log("🔍 Callback recebido:", { code: !!code, error, state })
+  console.log("🔍 Environment check:", {
+    hasClientId: !!process.env.SPOTIFY_CLIENT_ID,
+    hasClientSecret: !!process.env.SPOTIFY_CLIENT_SECRET,
+    clientIdLength: process.env.SPOTIFY_CLIENT_ID?.length || 0,
+  })
 
   if (error) {
     console.error("❌ Erro do Spotify:", error)
@@ -24,10 +29,14 @@ export async function GET(request: NextRequest) {
     const redirectUri = "https://rede2-ivory.vercel.app/api/spotify/callback"
 
     console.log("🔍 Iniciando troca de código por token...")
+    console.log("🔍 Client ID:", clientId ? `${clientId.substring(0, 8)}...` : "MISSING")
+    console.log("🔍 Client Secret:", clientSecret ? "PRESENT" : "MISSING")
 
     if (!clientSecret || !clientId) {
       console.error("❌ Variáveis de ambiente não encontradas!")
-      return NextResponse.redirect(new URL("/?error=missing_env_vars", request.url))
+      console.error("❌ SPOTIFY_CLIENT_ID:", clientId ? "PRESENT" : "MISSING")
+      console.error("❌ SPOTIFY_CLIENT_SECRET:", clientSecret ? "PRESENT" : "MISSING")
+      return NextResponse.redirect(new URL("/?error=missing_env_vars&details=client_id_or_secret_missing", request.url))
     }
 
     const tokenResponse = await fetch("https://accounts.spotify.com/api/token", {
