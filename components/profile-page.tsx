@@ -174,7 +174,7 @@ function ProfilePage() {
       unlocked: true,
     },
     {
-      name: "Mestre dos Trends",
+      name: "Mestre dos . Trends",
       description: "10 vídeos em alta",
       icon: TrendingUp,
       date: "Outubro 2023",
