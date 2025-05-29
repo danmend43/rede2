@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     const tokenData = await tokenResponse.json()
 
     // Redireciona de volta para a página principal com o token
-    const redirectUrl = new URL("/profile", request.url)
+    const redirectUrl = new URL("/", request.url)
     redirectUrl.searchParams.set("access_token", tokenData.access_token)
 
     if (tokenData.refresh_token) {
