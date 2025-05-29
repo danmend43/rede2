@@ -271,7 +271,7 @@ export default function ProfilePage() {
   const tempAvatarInputRef = useRef<HTMLInputElement>(null)
   const colorAnalysisCanvasRef = useRef<HTMLCanvasElement>(null)
 
-  // Inicialização dos estados de edição
+  // Inicialização dos estados de edição .
   useEffect(() => {
     setEditingName(userProfile.name)
     setEditingBio(userProfile.bio)
