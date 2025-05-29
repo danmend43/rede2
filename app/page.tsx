@@ -2654,4 +2654,110 @@ export default function ProfilePage() {
                         </Button>
                       </div>
                     </div>
-                  \
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto">
+                  {videoComments.length > 0 ? (
+                    <ul className="divide-y divide-gray-100">
+                      {videoComments.map((comment) => (
+                        <li key={comment.id} className="p-4">
+                          <div className="flex gap-3">
+                            <Avatar className="w-8 h-8 flex-shrink-0">
+                              <AvatarImage src={comment.avatar || "/placeholder.svg"} />
+                              <AvatarFallback>{comment.user[0]}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="font-medium">{comment.user}</span>
+                                <span className="text-gray-500">{comment.timestamp}</span>
+                              </div>
+                              <p className="text-gray-800 text-sm mt-1">{comment.comment}</p>
+                              <div className="flex items-center gap-4 mt-2 text-xs text-gray-600">
+                                <button className="hover:text-red-600 transition-colors flex items-center gap-1">
+                                  <Heart className="w-3 h-3" />
+                                  Curtir
+                                </button>
+                                <button className="hover:text-blue-600 transition-colors flex items-center gap-1">
+                                  <MessageCircle className="w-3 h-3" />
+                                  Responder
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-gray-400">Nenhum comentário ainda</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Cover Modal */}
+      {showRemoveCoverModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">Remover imagem de capa?</h3>
+              <Button variant="ghost" size="sm" onClick={() => setShowRemoveCoverModal(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="p-4 space-y-4">
+              <p className="text-gray-700">
+                Tem certeza de que deseja remover sua imagem de capa? Ela será substituída por um gradiente.
+              </p>
+            </div>
+            <div className="p-4 border-t flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowRemoveCoverModal(false)}>
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setTempCoverImage("/placeholder.svg?height=192&width=768")
+                  setTempCoverRemoved(true)
+                  setShowRemoveCoverModal(false)
+                }}
+              >
+                Remover
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Avatar Modal */}
+      {showAvatarModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">Alterar foto de perfil</h3>
+              <Button variant="ghost" size="sm" onClick={() => setShowAvatarModal(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="p-4 space-y-4">
+              <p className="text-gray-700">Selecione uma nova foto de perfil.</p>
+              <Avatar className="w-24 h-24 border-4 border-white shadow-md mx-auto">
+                <AvatarImage src={avatarImage || "/placeholder.svg"} />
+                <AvatarFallback className="text-2xl"></AvatarFallback>
+              </Avatar>
+            </div>
+            <div className="p-4 border-t flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowAvatarModal(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={() => avatarInputRef.current?.click()}>Alterar</Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
