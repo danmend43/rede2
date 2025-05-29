@@ -88,8 +88,6 @@ const marqueeStyles = `
   }
 `
 
-// Adicione o useEffect para injetar os estilos
-
 // Adicione este componente de ícone do Spotify após as outras importações de ícones
 const SpotifyIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -224,14 +222,201 @@ export default function ProfilePage() {
         verified: true,
       },
     },
+    {
+      id: 1002,
+      type: "post",
+      title: "Reflexões sobre desenvolvimento",
+      content:
+        "Hoje estava pensando sobre como a tecnologia evoluiu nos últimos anos. É incrível ver como frameworks como Next.js e React tornaram o desenvolvimento web muito mais eficiente. 🚀\n\nO que vocês acham das novas funcionalidades do React 19?",
+      thumbnail: null,
+      stats: {
+        likes: 2340,
+        comments: 89,
+        shares: 156,
+      },
+      timestamp: "2 dias atrás",
+      category: "Tecnologia",
+      author: {
+        name: "Dan",
+        username: "@dan",
+        avatar: "/placeholder.svg?height=128&width=128",
+        verified: true,
+      },
+    },
+    {
+      id: 1003,
+      type: "youtube",
+      title: "Tutorial: Como criar animações incríveis com CSS",
+      content:
+        "Neste vídeo, vou mostrar técnicas avançadas de CSS para criar animações que vão impressionar seus usuários. Desde transitions básicas até keyframes complexas!",
+      thumbnail: "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
+      youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      duration: "15:42",
+      stats: {
+        views: 89000,
+        likes: 5600,
+        comments: 234,
+        shares: 445,
+      },
+      timestamp: "3 dias atrás",
+      category: "Tecnologia",
+      author: {
+        name: "Dan",
+        username: "@dan",
+        avatar: "/placeholder.svg?height=128&width=128",
+        verified: true,
+      },
+    },
+    {
+      id: 1004,
+      type: "post",
+      title: "Descoberta musical",
+      content:
+        "Acabei de descobrir uma banda incrível! 🎵 Alguém mais aqui curte indie rock? Recomendo muito o último álbum deles, principalmente a faixa 'Midnight Dreams'.",
+      thumbnail: "/placeholder.svg?height=300&width=400",
+      stats: {
+        likes: 890,
+        comments: 45,
+        shares: 67,
+      },
+      timestamp: "4 dias atrás",
+      category: "Música",
+      author: {
+        name: "Dan",
+        username: "@dan",
+        avatar: "/placeholder.svg?height=128&width=128",
+        verified: true,
+      },
+    },
+    {
+      id: 1005,
+      type: "video",
+      title: "Gameplay: Explorando o novo mundo",
+      content:
+        "Primeira vez jogando este RPG e já estou viciado! A história é envolvente e os gráficos são impressionantes. Vou fazer uma série completa sobre este jogo.",
+      thumbnail: "/placeholder.svg?height=300&width=500",
+      duration: "08:30",
+      stats: {
+        views: 12000,
+        likes: 1200,
+        comments: 78,
+        shares: 89,
+      },
+      timestamp: "5 dias atrás",
+      category: "Jogos",
+      author: {
+        name: "Dan",
+        username: "@dan",
+        avatar: "/placeholder.svg?height=128&width=128",
+        verified: true,
+      },
+    },
+    {
+      id: 1006,
+      type: "post",
+      title: "Arte digital em progresso",
+      content:
+        "Trabalhando em uma nova ilustração digital. Desta vez estou experimentando com um estilo mais realista. O que vocês acham do esboço? 🎨",
+      thumbnail: "/placeholder.svg?height=400&width=400",
+      stats: {
+        likes: 3400,
+        comments: 156,
+        shares: 234,
+      },
+      timestamp: "1 semana atrás",
+      category: "Arte",
+      author: {
+        name: "Dan",
+        username: "@dan",
+        avatar: "/placeholder.svg?height=128&width=128",
+        verified: true,
+      },
+    },
   ])
 
   // Conquistas
-  const achievements = []
+  const achievements = [
+    {
+      id: 1,
+      name: "Primeiro Post",
+      description: "Publique seu primeiro post na plataforma",
+      rarity: "comum",
+      unlockedAt: "15 de março, 2024",
+      icon: "✨",
+    },
+    {
+      id: 2,
+      name: "Criador Popular",
+      description: "Alcance 10.000 curtidas em seus posts",
+      rarity: "raro",
+      unlockedAt: "22 de março, 2024",
+      icon: "🔥",
+    },
+    {
+      id: 3,
+      name: "Mestre do YouTube",
+      description: "Publique 10 vídeos do YouTube",
+      rarity: "épico",
+      unlockedAt: "5 de abril, 2024",
+      icon: "🎬",
+    },
+    {
+      id: 4,
+      name: "Influenciador",
+      description: "Tenha mais de 100.000 seguidores",
+      rarity: "lendário",
+      unlockedAt: "12 de abril, 2024",
+      icon: "👑",
+    },
+    {
+      id: 5,
+      name: "Artista Dedicado",
+      description: "Publique 50 posts na categoria Arte",
+      rarity: "épico",
+      unlockedAt: "18 de abril, 2024",
+      icon: "🎨",
+    },
+    {
+      id: 6,
+      name: "Gamer Hardcore",
+      description: "Publique 25 vídeos de jogos",
+      rarity: "raro",
+      unlockedAt: "25 de abril, 2024",
+      icon: "🎮",
+    },
+  ]
 
   // Categorias e dados
   const categories = ["Pessoal", "Anime", "Tecnologia", "Jogos", "Culinária", "Música", "Arte"]
-  const collections = []
+  const collections = [
+    {
+      id: 1,
+      name: "Melhores Tutoriais",
+      description: "Uma coleção dos meus tutoriais mais populares sobre desenvolvimento web",
+      thumbnail: "/placeholder.svg?height=200&width=300",
+      itemCount: 12,
+      createdAt: "março 2024",
+      visibility: "Público",
+    },
+    {
+      id: 2,
+      name: "Arte Digital",
+      description: "Minhas criações artísticas favoritas e trabalhos em progresso",
+      thumbnail: "/placeholder.svg?height=200&width=300",
+      itemCount: 8,
+      createdAt: "abril 2024",
+      visibility: "Público",
+    },
+    {
+      id: 3,
+      name: "Gaming Highlights",
+      description: "Os melhores momentos dos meus gameplays",
+      thumbnail: "/placeholder.svg?height=200&width=300",
+      itemCount: 15,
+      createdAt: "abril 2024",
+      visibility: "Privado",
+    },
+  ]
 
   // Mega menu categorias
   const megaMenuCategories = [
@@ -1061,6 +1246,7 @@ export default function ProfilePage() {
         accept="image/*"
         className="hidden"
       />
+
       {/* Spotify Error Notification */}
       {spotifyError && (
         <div className="fixed top-4 right-4 z-50 max-w-md">
@@ -1083,6 +1269,7 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+
       {/* Header */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 py-4">
@@ -1208,6 +1395,7 @@ export default function ProfilePage() {
           <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setShowMegaMenuState(false)} />
         )}
       </header>
+
       <div className="max-w-6xl mx-auto px-6">
         {/* Cover Image */}
         <div
@@ -2002,7 +2190,10 @@ export default function ProfilePage() {
           </Tabs>
         </div>
       </div>
-      ;<canvas ref={colorAnalysisCanvasRef} className="hidden" />
+
+      <canvas ref={colorAnalysisCanvasRef} className="hidden" />
+
+      {/* Create Post Modal */}
       {showCreatePostModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-xl overflow-hidden">
@@ -2126,6 +2317,8 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+
+      {/* Edit Profile Modal */}
       {showEditProfileModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden">
@@ -2308,6 +2501,8 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+
+      {/* YouTube Modal */}
       {showYouTubeModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-7xl h-[90vh] overflow-hidden flex flex-col">
@@ -2444,6 +2639,8 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+
+      {/* Avatar Modal */}
       {showAvatarModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden">
