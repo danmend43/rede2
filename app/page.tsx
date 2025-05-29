@@ -47,6 +47,18 @@ import {
   Code,
   Sparkles,
   AlertCircle,
+  ChevronDown,
+  ChevronRight,
+  ChevronLeft,
+  Shield,
+  Lock,
+  Mail,
+  Type,
+  Volume2,
+  Monitor,
+  Smartphone,
+  Languages,
+  LogOut,
 } from "lucide-react"
 
 // Substitua o CSS do marquee por este:
@@ -155,6 +167,8 @@ export default function ProfilePage() {
   const [tempCoverImage, setTempCoverImage] = useState("")
   const [tempAvatarImage, setTempAvatarImage] = useState("")
   const [showRemoveCoverModal, setShowRemoveCoverModal] = useState(false)
+  // Adicione este estado após os outros estados de edição de perfil
+  const [tempCoverRemoved, setTempCoverRemoved] = useState(false)
 
   // Estados do Spotify
   const [spotifyToken, setSpotifyToken] = useState<string | null>(null)
@@ -173,6 +187,10 @@ export default function ProfilePage() {
   // Estado do mega menu
   const [megaMenuDescription, setMegaMenuDescription] = useState("Descubra mais conteúdo incrível na nossa plataforma")
   const [showMegaMenuState, setShowMegaMenuState] = useState(false)
+
+  // Adicionar estados para o menu dropdown após os outros estados:
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const [userMenuSection, setUserMenuSection] = useState("main")
 
   // Perfil do usuário
   const [userProfile, setUserProfile] = useState({
@@ -817,6 +835,19 @@ export default function ProfilePage() {
 
     setCoverImage(tempCoverImage)
     setAvatarImage(tempAvatarImage)
+    setTempCoverRemoved(false) // Resetar o estado após salvar
+    setShowEditProfileModal(false)
+  }
+
+  const handleCancelEdit = () => {
+    // Restaurar os valores originais
+    setEditingName(userProfile.name)
+    setEditingBio(userProfile.bio)
+    setEditingLocation(userProfile.location)
+    setEditingWebsite(userProfile.website)
+    setTempCoverImage(coverImage)
+    setTempAvatarImage(avatarImage)
+    setTempCoverRemoved(false)
     setShowEditProfileModal(false)
   }
 
@@ -1171,13 +1202,226 @@ export default function ProfilePage() {
               <Button variant="outline" size="sm">
                 <Bell className="w-4 h-4" />
               </Button>
-              <Button variant="outline" size="sm">
-                <Settings className="w-4 h-4" />
-              </Button>
-              <Avatar className="w-8 h-8">
-                <AvatarImage src={avatarImage || "/placeholder.svg"} />
-                <AvatarFallback></AvatarFallback>
-              </Avatar>
+              {/* Substituir o Avatar no header por este código com dropdown: */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-1 hover:bg-gray-100 rounded-lg p-1 transition-colors"
+                >
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src={avatarImage || "/placeholder.svg"} />
+                    <AvatarFallback></AvatarFallback>
+                  </Avatar>
+                  <ChevronDown className="w-3 h-3 text-gray-600" />
+                </button>
+
+                {/* User Menu Dropdown */}
+                {showUserMenu && (
+                  <div className="absolute top-full right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                    {userMenuSection === "main" && (
+                      <div className="p-4">
+                        {/* User Info Header */}
+                        <div className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg mb-2">
+                          <Avatar className="w-12 h-12">
+                            <AvatarImage src={avatarImage || "/placeholder.svg"} />
+                            <AvatarFallback></AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="font-semibold text-gray-900">{userProfile.name}</div>
+                            <div className="text-sm text-gray-600">Ver seu perfil</div>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-gray-100 pt-2">
+                          {/* Menu Items */}
+                          <button
+                            onClick={() => setUserMenuSection("settings")}
+                            className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                <Settings className="w-4 h-4 text-gray-600" />
+                              </div>
+                              <span className="text-gray-900 font-medium">Configurações e privacidade</span>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-400" />
+                          </button>
+
+                          <button
+                            onClick={() => setUserMenuSection("help")}
+                            className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                <MessageCircle className="w-4 h-4 text-gray-600" />
+                              </div>
+                              <span className="text-gray-900 font-medium">Ajuda e suporte</span>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-400" />
+                          </button>
+
+                          <button
+                            onClick={() => setUserMenuSection("accessibility")}
+                            className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                <Eye className="w-4 h-4 text-gray-600" />
+                              </div>
+                              <span className="text-gray-900 font-medium">Acessibilidade</span>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-400" />
+                          </button>
+
+                          <button
+                            onClick={() => setUserMenuSection("display")}
+                            className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                <Palette className="w-4 h-4 text-gray-600" />
+                              </div>
+                              <span className="text-gray-900 font-medium">Exibição e acessibilidade</span>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-400" />
+                          </button>
+
+                          <div className="border-t border-gray-100 mt-2 pt-2">
+                            <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                              <LogOut className="w-4 h-4 text-gray-600" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {userMenuSection === "settings" && (
+                      <div className="p-4">
+                        {/* Back Button */}
+                        <button
+                          onClick={() => setUserMenuSection("main")}
+                          className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg mb-3 transition-colors"
+                        >
+                          <ChevronLeft className="w-4 h-4 text-gray-600" />
+                          <span className="text-gray-600">Configurações e privacidade</span>
+                        </button>
+
+                        <div className="space-y-1">
+                          <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                            <Settings className="w-5 h-5 text-gray-600" />
+                            <span className="text-gray-900">Configurações</span>
+                          </button>
+                          <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                            <Shield className="w-5 h-5 text-gray-600" />
+                            <span className="text-gray-900">Privacidade</span>
+                          </button>
+                          <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                            <Bell className="w-5 h-5 text-gray-600" />
+                            <span className="text-gray-900">Notificações</span>
+                          </button>
+                          <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                            <Lock className="w-5 h-5 text-gray-600" />
+                            <span className="text-gray-900">Segurança</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {userMenuSection === "help" && (
+                      <div className="p-4">
+                        <button
+                          onClick={() => setUserMenuSection("main")}
+                          className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg mb-3 transition-colors"
+                        >
+                          <ChevronLeft className="w-4 h-4 text-gray-600" />
+                          <span className="text-gray-600">Ajuda e suporte</span>
+                        </button>
+
+                        <div className="space-y-1">
+                          <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                            <MessageCircle className="w-5 h-5 text-gray-600" />
+                            <span className="text-gray-900">Central de ajuda</span>
+                          </button>
+                          <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                            <Mail className="w-5 h-5 text-gray-600" />
+                            <span className="text-gray-900">Entrar em contato</span>
+                          </button>
+                          <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                            <AlertCircle className="w-5 h-5 text-gray-600" />
+                            <span className="text-gray-900">Reportar problema</span>
+                          </button>
+                          <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                            <BookOpen className="w-5 h-5 text-gray-600" />
+                            <span className="text-gray-900">Termos de uso</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {userMenuSection === "accessibility" && (
+                      <div className="p-4">
+                        <button
+                          onClick={() => setUserMenuSection("main")}
+                          className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg mb-3 transition-colors"
+                        >
+                          <ChevronLeft className="w-4 h-4 text-gray-600" />
+                          <span className="text-gray-600">Acessibilidade</span>
+                        </button>
+
+                        <div className="space-y-1">
+                          <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                            <Eye className="w-5 h-5 text-gray-600" />
+                            <span className="text-gray-900">Leitor de tela</span>
+                          </button>
+                          <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                            <Type className="w-5 h-5 text-gray-600" />
+                            <span className="text-gray-900">Tamanho da fonte</span>
+                          </button>
+                          <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                            <Zap className="w-5 h-5 text-gray-600" />
+                            <span className="text-gray-900">Reduzir animações</span>
+                          </button>
+                          <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                            <Volume2 className="w-5 h-5 text-gray-600" />
+                            <span className="text-gray-900">Áudio descrição</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {userMenuSection === "display" && (
+                      <div className="p-4">
+                        <button
+                          onClick={() => setUserMenuSection("main")}
+                          className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg mb-3 transition-colors"
+                        >
+                          <ChevronLeft className="w-4 h-4 text-gray-600" />
+                          <span className="text-gray-600">Exibição e acessibilidade</span>
+                        </button>
+
+                        <div className="space-y-1">
+                          <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                            <Palette className="w-5 h-5 text-gray-600" />
+                            <span className="text-gray-900">Modo escuro</span>
+                          </button>
+                          <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                            <Monitor className="w-5 h-5 text-gray-600" />
+                            <span className="text-gray-900">Compactar feeds</span>
+                          </button>
+                          <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                            <Smartphone className="w-5 h-5 text-gray-600" />
+                            <span className="text-gray-900">Modo móvel</span>
+                          </button>
+                          <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                            <Languages className="w-5 h-5 text-gray-600" />
+                            <span className="text-gray-900">Idioma</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1186,6 +1430,8 @@ export default function ProfilePage() {
         {showMegaMenuState && (
           <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setShowMegaMenuState(false)} />
         )}
+        {/* Overlay para fechar o user menu */}
+        {showUserMenu && <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />}
       </header>
 
       <div className="max-w-6xl mx-auto px-6">
@@ -2221,15 +2467,31 @@ export default function ProfilePage() {
                           <Upload className="w-4 h-4 mr-2" />
                           Alterar
                         </Button>
-                        {tempCoverImage !== "/placeholder.svg?height=192&width=768" && tempCoverImage && (
+                        {!tempCoverRemoved &&
+                          tempCoverImage !== "/placeholder.svg?height=192&width=768" &&
+                          tempCoverImage && (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="bg-red-600/90 hover:bg-red-700/90 text-white"
+                              onClick={() => setShowRemoveCoverModal(true)}
+                            >
+                              <X className="w-4 h-4 mr-2" />
+                              Remover
+                            </Button>
+                          )}
+                        {tempCoverRemoved && (
                           <Button
-                            variant="destructive"
+                            variant="outline"
                             size="sm"
-                            className="bg-red-600/90 hover:bg-red-700/90 text-white"
-                            onClick={() => setShowRemoveCoverModal(true)}
+                            className="bg-white/90"
+                            onClick={() => {
+                              setTempCoverRemoved(false)
+                              setTempCoverImage(coverImage)
+                            }}
                           >
-                            <X className="w-4 h-4 mr-2" />
-                            Remover
+                            <Upload className="w-4 h-4 mr-2" />
+                            Restaurar
                           </Button>
                         )}
                       </div>
@@ -2285,7 +2547,7 @@ export default function ProfilePage() {
               )}
             </div>
             <div className="p-4 border-t flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowEditProfileModal(false)}>
+              <Button variant="outline" onClick={handleCancelEdit}>
                 Cancelar
               </Button>
               <Button onClick={handleEditProfileSave}>Salvar</Button>
@@ -2481,6 +2743,7 @@ export default function ProfilePage() {
                 <Button
                   variant="destructive"
                   onClick={() => {
+                    setTempCoverRemoved(true)
                     setTempCoverImage("/placeholder.svg?height=192&width=768")
                     setShowRemoveCoverModal(false)
                   }}
