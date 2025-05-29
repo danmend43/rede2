@@ -60,8 +60,7 @@ const marqueeStyles = `
   
   .marquee-content {
     display: inline-block;
-    animation: marquee 8s linear infinite;
-    animation-delay: 1s;
+    animation: marquee 12s linear infinite;
   }
   
   .marquee-content.paused {
@@ -70,33 +69,25 @@ const marqueeStyles = `
   
   @keyframes marquee {
     0% {
-      transform: translateX(100%);
+      transform: translateX(0%);
     }
-    15% {
-      transform: translateX(100%);
+    20% {
+      transform: translateX(0%);
+    }
+    80% {
+      transform: translateX(-100%);
     }
     85% {
-      transform: translateX(-100%);
+      transform: translateX(100%);
     }
     100% {
-      transform: translateX(-100%);
+      transform: translateX(0%);
     }
   }
   
   .text-fade-container {
     position: relative;
     overflow: hidden;
-  }
-  
-  .text-fade-container::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 20px;
-    height: 100%;
-    background: linear-gradient(to left, var(--fade-color, rgba(255, 255, 255, 0.8)), transparent);
-    pointer-events: none;
   }
 `
 
@@ -1417,10 +1408,7 @@ export default function ProfilePage() {
                           <span className="text-white text-sm font-medium flex-shrink-0 mr-1">
                             {isPlaying ? "Ouvindo" : "Pausado"} -
                           </span>
-                          <div
-                            className="overflow-hidden flex-1 relative text-fade-container"
-                            style={{ "--fade-color": isPlaying ? "rgba(29, 185, 84, 0.8)" : "rgba(45, 55, 72, 0.8)" }}
-                          >
+                          <div className="overflow-hidden flex-1 relative">
                             {currentSpotifyTrack.name.length > 25 ? (
                               <div className="marquee-container">
                                 <div className="marquee-content text-white text-sm font-medium">
@@ -1446,7 +1434,7 @@ export default function ProfilePage() {
                             <div className="absolute inset-0 bg-black/20 rounded-md"></div>
                           </div>
                           <div className="flex-1 min-w-0 pr-6">
-                            <div className="text-fade-container">
+                            <div className="overflow-hidden flex-1 relative">
                               {currentSpotifyTrack.name.length > 20 ? (
                                 <div className="marquee-container">
                                   <div className="marquee-content font-medium text-white text-sm drop-shadow-sm">
