@@ -2836,7 +2836,7 @@ export default function ProfilePage() {
                     className="w-full border rounded-lg p-3 min-h-[100px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     value={editingBio}
                     onChange={(e) => setEditingBio(e.target.value)}
-                    placeholder="Tell us about yourself..."
+                    placeholder="Escreva uma biografia..."
                     maxLength={300}
                   />
                   <div className="text-right text-xs text-gray-500">{editingBio.length}/300 characters</div>
