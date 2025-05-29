@@ -59,8 +59,14 @@ import {
   AlertCircle,
 } from "lucide-react"
 
-// Adicionar as interfaces e funções de análise de cores após as importações existentes
+// Adicione este componente de ícone do Spotify após as outras importações de ícones
+const SpotifyIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z" />
+  </svg>
+)
 
+// Interfaces e tipos
 interface DominantColor {
   r: number
   g: number
@@ -69,7 +75,7 @@ interface DominantColor {
 }
 
 export default function ProfilePage() {
-  // Adicionar estados para o gradiente automático
+  // Estados para o gradiente automático
   const [autoGradient, setAutoGradient] = useState<string | null>(null)
   const [dominantColors, setDominantColors] = useState<DominantColor[]>([])
 
@@ -119,6 +125,8 @@ export default function ProfilePage() {
   const [isSpotifyConnected, setIsSpotifyConnected] = useState(false)
   const [spotifyError, setSpotifyError] = useState<string | null>(null)
   const [spotifyGradient, setSpotifyGradient] = useState<string | null>(null)
+  const [trackProgress, setTrackProgress] = useState(0)
+  const [trackDuration, setTrackDuration] = useState(0)
 
   // Estado do mega menu
   const [megaMenuDescription, setMegaMenuDescription] = useState("Descubra mais conteúdo incrível na nossa plataforma")
@@ -285,18 +293,33 @@ export default function ProfilePage() {
   useEffect(() => {
     // Verifica se há token do Spotify no localStorage
     const savedToken = localStorage.getItem("spotify_token")
+    const savedRefreshToken = localStorage.getItem("spotify_refresh_token")
+
     if (savedToken) {
       setSpotifyToken(savedToken)
       setIsSpotifyConnected(true)
       fetchSpotifyUser(savedToken)
       fetchCurrentTrack(savedToken)
 
-      // Configura intervalo para verificar música atual a cada 5 segundos
+      // Configura intervalo para verificar música atual a cada 3 segundos
       const interval = setInterval(() => {
         fetchCurrentTrack(savedToken)
-      }, 5000)
+      }, 3000)
 
-      return () => clearInterval(interval)
+      // Configura renovação automática do token a cada 50 minutos
+      const refreshInterval = setInterval(
+        async () => {
+          if (savedRefreshToken) {
+            await refreshSpotifyToken(savedRefreshToken)
+          }
+        },
+        50 * 60 * 1000,
+      ) // 50 minutos
+
+      return () => {
+        clearInterval(interval)
+        clearInterval(refreshInterval)
+      }
     }
 
     // Verifica se voltou do callback com token
@@ -343,7 +366,7 @@ export default function ProfilePage() {
 
       const interval = setInterval(() => {
         fetchCurrentTrack(accessToken)
-      }, 5000)
+      }, 3000)
 
       // Remove os parâmetros da URL
       window.history.replaceState({}, document.title, window.location.pathname)
@@ -389,6 +412,8 @@ export default function ProfilePage() {
         const data = await response.json()
         if (data && data.item && data.is_playing) {
           setCurrentSpotifyTrack(data.item)
+          setTrackProgress(data.progress_ms || 0)
+          setTrackDuration(data.item.duration_ms || 0)
 
           // Analisar cores da imagem do álbum se disponível
           if (data.item.album?.images?.[0]?.url) {
@@ -396,11 +421,21 @@ export default function ProfilePage() {
           }
         } else {
           setCurrentSpotifyTrack(null)
+          setTrackProgress(0)
+          setTrackDuration(0)
         }
       } else if (response.status === 204) {
         setCurrentSpotifyTrack(null)
+        setTrackProgress(0)
+        setTrackDuration(0)
       } else if (response.status === 401) {
-        handleSpotifyDisconnect()
+        // Tentar renovar o token antes de desconectar
+        const refreshToken = localStorage.getItem("spotify_refresh_token")
+        if (refreshToken) {
+          await refreshSpotifyToken(refreshToken)
+        } else {
+          handleSpotifyDisconnect()
+        }
       }
     } catch (error) {
       console.error("Erro ao buscar música atual:", error)
@@ -440,6 +475,34 @@ export default function ProfilePage() {
     setCurrentSpotifyTrack(null)
     setIsSpotifyConnected(false)
     setSpotifyError(null)
+  }
+
+  const refreshSpotifyToken = async (refreshToken: string) => {
+    try {
+      const response = await fetch("/api/spotify/refresh", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        localStorage.setItem("spotify_token", data.access_token)
+        if (data.refresh_token) {
+          localStorage.setItem("spotify_refresh_token", data.refresh_token)
+        }
+        setSpotifyToken(data.access_token)
+        setSpotifyError(null)
+        return data.access_token
+      } else {
+        handleSpotifyDisconnect()
+      }
+    } catch (error) {
+      console.error("Erro ao renovar token:", error)
+      handleSpotifyDisconnect()
+    }
   }
 
   // Funções utilitárias
@@ -713,7 +776,7 @@ export default function ProfilePage() {
     setNewComment("")
   }
 
-  // Adicionar função para extrair cores dominantes
+  // Função para extrair cores dominantes
   const extractDominantColors = useCallback((imageUrl: string) => {
     const canvas = colorAnalysisCanvasRef.current
     if (!canvas) return
@@ -857,7 +920,7 @@ export default function ProfilePage() {
     setSpotifyGradient(gradient)
   }
 
-  // Adicionar função para gerar gradiente automático
+  // Função para gerar gradiente automático
   const generateAutoGradient = (colors: DominantColor[]) => {
     if (colors.length === 0) {
       setAutoGradient("linear-gradient(135deg, #1a1a1a, #000)")
@@ -876,12 +939,18 @@ export default function ProfilePage() {
     setAutoGradient(gradient)
   }
 
-  // Adicionar useEffect para analisar avatar quando mudar
+  // useEffect para analisar avatar quando mudar
   useEffect(() => {
     if (avatarImage && avatarImage !== "/placeholder.svg?height=128&width=128") {
       extractDominantColors(avatarImage)
     }
   }, [avatarImage, extractDominantColors])
+
+  const formatTime = (ms: number) => {
+    const minutes = Math.floor(ms / 60000)
+    const seconds = Math.floor((ms % 60000) / 1000)
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -1059,8 +1128,6 @@ export default function ProfilePage() {
 
       <div className="max-w-6xl mx-auto px-6">
         {/* Cover Image */}
-        {/* Modificar a seção Cover Image para usar o gradiente automático quando não há capa personalizada */}
-        {/* Substituir a div da Cover Image por: */}
         <div
           className="relative h-48 rounded-b-2xl overflow-hidden"
           style={{
@@ -1203,12 +1270,12 @@ export default function ProfilePage() {
                   {/* Ícone do Spotify no canto superior direito */}
                   <div className="absolute top-2 right-2 z-10">
                     <div className="w-5 h-5 bg-[#1DB954] rounded-full flex items-center justify-center">
-                      <Music className="w-3 h-3 text-white" />
+                      <SpotifyIcon className="w-3 h-3 text-white" />
                     </div>
                   </div>
 
                   <CardContent className="p-3 relative z-10">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 mb-3">
                       <img
                         src={currentSpotifyTrack.album?.images?.[2]?.url || "/placeholder.svg"}
                         alt="Album cover"
@@ -1223,8 +1290,24 @@ export default function ProfilePage() {
                         </p>
                         <div className="flex items-center gap-1 mt-1">
                           <div className="w-2 h-2 bg-[#1DB954] rounded-full animate-pulse"></div>
-                          <span className="text-xs text-gray-100">Tocando agora no Spotify</span>
+                          <span className="text-xs text-gray-100">Tocando agora</span>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Barra de progresso */}
+                    <div className="space-y-1">
+                      <div className="w-full bg-white/20 rounded-full h-1">
+                        <div
+                          className="bg-white h-1 rounded-full transition-all duration-1000 ease-linear"
+                          style={{
+                            width: trackDuration > 0 ? `${(trackProgress / trackDuration) * 100}%` : "0%",
+                          }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-100 opacity-90">
+                        <span>{formatTime(trackProgress)}</span>
+                        <span>{formatTime(trackDuration)}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -2585,7 +2668,7 @@ export default function ProfilePage() {
           </div>
         </div>
       </footer>
-      {/* Adicionar canvas oculto para análise de cores antes do fechamento do componente */}
+      {/* Canvas oculto para análise de cores */}
       <canvas ref={colorAnalysisCanvasRef} className="hidden" />
     </div>
   )
