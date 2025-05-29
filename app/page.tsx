@@ -49,7 +49,7 @@ import {
   AlertCircle,
 } from "lucide-react"
 
-// Adicione este estilo CSS no início do componente
+// Substitua o CSS do marquee por este:
 const marqueeStyles = `
   .marquee-container {
     overflow: hidden;
@@ -60,7 +60,7 @@ const marqueeStyles = `
   
   .marquee-content {
     display: inline-block;
-    animation: marquee 12s linear infinite;
+    animation: marquee 15s linear infinite;
   }
   
   .marquee-content.paused {
@@ -71,17 +71,11 @@ const marqueeStyles = `
     0% {
       transform: translateX(0%);
     }
-    20% {
+    25% {
       transform: translateX(0%);
-    }
-    80% {
-      transform: translateX(-100%);
-    }
-    85% {
-      transform: translateX(100%);
     }
     100% {
-      transform: translateX(0%);
+      transform: translateX(-100%);
     }
   }
   
