@@ -3,7 +3,7 @@
 import type React from "react"
 import { Edit, X, Smile, Youtube, Menu } from "lucide-react"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -59,7 +59,20 @@ import {
   AlertCircle,
 } from "lucide-react"
 
+// Adicionar as interfaces e funções de análise de cores após as importações existentes
+
+interface DominantColor {
+  r: number
+  g: number
+  b: number
+  count: number
+}
+
 export default function ProfilePage() {
+  // Adicionar estados para o gradiente automático
+  const [autoGradient, setAutoGradient] = useState<string | null>(null)
+  const [dominantColors, setDominantColors] = useState<DominantColor[]>([])
+
   // Estados principais
   const [viewMode, setViewMode] = useState("grid")
   const [activeTab, setActiveTab] = useState("posts")
@@ -255,6 +268,7 @@ export default function ProfilePage() {
   const postMediaInputRef = useRef<HTMLInputElement>(null)
   const tempCoverInputRef = useRef<HTMLInputElement>(null)
   const tempAvatarInputRef = useRef<HTMLInputElement>(null)
+  const colorAnalysisCanvasRef = useRef<HTMLCanvasElement>(null)
 
   // Inicialização dos estados de edição
   useEffect(() => {
@@ -693,6 +707,96 @@ export default function ProfilePage() {
     setNewComment("")
   }
 
+  // Adicionar função para extrair cores dominantes
+  const extractDominantColors = useCallback((imageUrl: string) => {
+    const canvas = colorAnalysisCanvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    const img = new Image()
+    img.crossOrigin = "anonymous"
+
+    img.onload = () => {
+      // Redimensionar para análise mais rápida
+      const maxSize = 100
+      const ratio = Math.min(maxSize / img.width, maxSize / img.height)
+      const width = img.width * ratio
+      const height = img.height * ratio
+
+      canvas.width = width
+      canvas.height = height
+
+      ctx.drawImage(img, 0, 0, width, height)
+
+      const imageData = ctx.getImageData(0, 0, width, height)
+      const data = imageData.data
+
+      const colorMap = new Map<string, DominantColor>()
+
+      // Analisar pixels
+      for (let i = 0; i < data.length; i += 16) {
+        const r = data[i]
+        const g = data[i + 1]
+        const b = data[i + 2]
+        const alpha = data[i + 3]
+
+        // Ignorar pixels transparentes ou muito escuros/claros
+        if (alpha < 128 || r + g + b < 50 || r + g + b > 650) continue
+
+        // Agrupar cores similares
+        const roundedR = Math.round(r / 20) * 20
+        const roundedG = Math.round(g / 20) * 20
+        const roundedB = Math.round(b / 20) * 20
+
+        const key = `${roundedR},${roundedG},${roundedB}`
+
+        if (colorMap.has(key)) {
+          colorMap.get(key)!.count++
+        } else {
+          colorMap.set(key, { r: roundedR, g: roundedG, b: roundedB, count: 1 })
+        }
+      }
+
+      // Ordenar por frequência e pegar as top 5
+      const sortedColors = Array.from(colorMap.values())
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5)
+
+      setDominantColors(sortedColors)
+      generateAutoGradient(sortedColors)
+    }
+
+    img.src = imageUrl
+  }, [])
+
+  // Adicionar função para gerar gradiente automático
+  const generateAutoGradient = (colors: DominantColor[]) => {
+    if (colors.length === 0) {
+      setAutoGradient("linear-gradient(135deg, #1a1a1a, #000)")
+      return
+    }
+
+    const primaryColor = colors[0]
+    const secondaryColor = colors[1] || primaryColor
+
+    // Criar versões mais escuras e suaves para o gradiente
+    const darkPrimary = `rgb(${Math.round(primaryColor.r * 0.2)}, ${Math.round(primaryColor.g * 0.2)}, ${Math.round(primaryColor.b * 0.2)})`
+    const mediumPrimary = `rgb(${Math.round(primaryColor.r * 0.35)}, ${Math.round(primaryColor.g * 0.35)}, ${Math.round(primaryColor.b * 0.35)})`
+    const lightSecondary = `rgb(${Math.round(secondaryColor.r * 0.5)}, ${Math.round(secondaryColor.g * 0.5)}, ${Math.round(secondaryColor.b * 0.5)})`
+
+    const gradient = `linear-gradient(45deg, ${lightSecondary} 0%, ${mediumPrimary} 50%, ${darkPrimary} 100%)`
+    setAutoGradient(gradient)
+  }
+
+  // Adicionar useEffect para analisar avatar quando mudar
+  useEffect(() => {
+    if (avatarImage && avatarImage !== "/placeholder.svg?height=128&width=128") {
+      extractDominantColors(avatarImage)
+    }
+  }, [avatarImage, extractDominantColors])
+
   return (
     <div className="min-h-screen bg-white">
       {/* Hidden file inputs */}
@@ -869,9 +973,25 @@ export default function ProfilePage() {
 
       <div className="max-w-6xl mx-auto px-6">
         {/* Cover Image */}
-        <div className="relative h-48 bg-gradient-to-r from-blue-500 to-purple-600 rounded-b-2xl overflow-hidden">
-          <img src={coverImage || "/placeholder.svg"} alt="Cover" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-black/20"></div>
+        {/* Modificar a seção Cover Image para usar o gradiente automático quando não há capa personalizada */}
+        {/* Substituir a div da Cover Image por: */}
+        <div
+          className="relative h-48 rounded-b-2xl overflow-hidden"
+          style={{
+            background:
+              coverImage && coverImage !== "/placeholder.svg?height=192&width=768"
+                ? "none"
+                : autoGradient || "linear-gradient(to-r, #3b82f6, #8b5cf6)",
+          }}
+        >
+          {coverImage && coverImage !== "/placeholder.svg?height=192&width=768" ? (
+            <>
+              <img src={coverImage || "/placeholder.svg"} alt="Cover" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/20"></div>
+            </>
+          ) : (
+            <div className="absolute inset-0 bg-black/20"></div>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -1252,7 +1372,7 @@ export default function ProfilePage() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-96 text-gray-500">
-                    <MessageCircle className="w-16 h-16 mb-4 text-gray-300" />
+                    <Play className="w-16 h-16 mb-4 text-gray-300" />
                     <h3 className="text-lg font-medium mb-2">Nenhum post ainda</h3>
                     <p className="text-sm text-center">Quando você criar posts, eles aparecerão aqui.</p>
                   </div>
@@ -2362,6 +2482,8 @@ export default function ProfilePage() {
           </div>
         </div>
       </footer>
+      {/* Adicionar canvas oculto para análise de cores antes do fechamento do componente */}
+      <canvas ref={colorAnalysisCanvasRef} className="hidden" />
     </div>
   )
 }
