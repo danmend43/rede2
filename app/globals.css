@@ -93,26 +93,53 @@ body {
   }
 }
 
-@keyframes slow-marquee {
+@keyframes continuous-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes pause-then-marquee {
   0%,
-  15%,
+  15% {
+    transform: translateX(0);
+  }
+  16%,
+  84% {
+    animation: continuous-marquee 8s linear infinite;
+    transform: translateX(-100%);
+  }
   85%,
   100% {
     transform: translateX(0);
-  }
-  45% {
-    transform: translateX(-100%);
-  }
-  46% {
-    transform: translateX(-100%);
   }
 }
 
 .animate-slow-marquee {
   display: inline-block;
   white-space: nowrap;
-  animation: slow-marquee 30s ease-in-out infinite;
-  padding-right: 50px;
+  animation: pause-then-marquee 20s ease-in-out infinite;
+}
+
+.marquee-container {
+  overflow: hidden;
+  position: relative;
+}
+
+.marquee-content {
+  display: inline-block;
+  white-space: nowrap;
+  animation: continuous-marquee 8s linear infinite;
+}
+
+.marquee-content::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 100%;
+  white-space: nowrap;
 }
 
 .text-fade-container {
@@ -133,10 +160,10 @@ body {
 
 .text-fade-container::after {
   right: 0;
-  background: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.7));
+  background: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 1));
 }
 
 .text-fade-container::before {
   left: 0;
-  background: linear-gradient(to left, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.7));
+  background: linear-gradient(to left, rgba(255, 255, 255, 0), rgba(255, 255, 255, 1));
 }
