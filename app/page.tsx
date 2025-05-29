@@ -49,6 +49,59 @@ import {
   AlertCircle,
 } from "lucide-react"
 
+// Adicione este estilo CSS no início do componente
+const marqueeStyles = `
+  .marquee-container {
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+    width: 100%;
+  }
+  
+  .marquee-content {
+    display: inline-block;
+    animation: marquee 8s linear infinite;
+    animation-delay: 1s;
+  }
+  
+  .marquee-content.paused {
+    animation-play-state: paused;
+  }
+  
+  @keyframes marquee {
+    0% {
+      transform: translateX(100%);
+    }
+    15% {
+      transform: translateX(100%);
+    }
+    85% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+  
+  .text-fade-container {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .text-fade-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 20px;
+    height: 100%;
+    background: linear-gradient(to left, var(--fade-color, rgba(255, 255, 255, 0.8)), transparent);
+    pointer-events: none;
+  }
+`
+
+// Adicione o useEffect para injetar os estilos
+
 // Adicione este componente de ícone do Spotify após as outras importações de ícones
 const SpotifyIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -68,6 +121,17 @@ export default function ProfilePage() {
   // Estados para o gradiente automático
   const [autoGradient, setAutoGradient] = useState<string | null>(null)
   const [dominantColors, setDominantColors] = useState<DominantColor[]>([])
+
+  // Efeito para injetar os estilos CSS do marquee
+  useEffect(() => {
+    const styleElement = document.createElement("style")
+    styleElement.textContent = marqueeStyles
+    document.head.appendChild(styleElement)
+
+    return () => {
+      document.head.removeChild(styleElement)
+    }
+  }, [])
 
   // Estados principais
   const [viewMode, setViewMode] = useState("grid")
@@ -1009,7 +1073,6 @@ export default function ProfilePage() {
         accept="image/*"
         className="hidden"
       />
-
       {/* Spotify Error Notification */}
       {spotifyError && (
         <div className="fixed top-4 right-4 z-50 max-w-md">
@@ -1032,7 +1095,6 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
-
       {/* Header */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 py-4">
@@ -1158,7 +1220,6 @@ export default function ProfilePage() {
           <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setShowMegaMenuState(false)} />
         )}
       </header>
-
       <div className="max-w-6xl mx-auto px-6">
         {/* Cover Image */}
         <div
@@ -1360,23 +1421,20 @@ export default function ProfilePage() {
                             className="overflow-hidden flex-1 relative text-fade-container"
                             style={{ "--fade-color": isPlaying ? "rgba(29, 185, 84, 0.8)" : "rgba(45, 55, 72, 0.8)" }}
                           >
-                            {currentSpotifyTrack.name.length > 20 ? (
+                            {currentSpotifyTrack.name.length > 25 ? (
                               <div className="marquee-container">
-                                <div
-                                  className="marquee-content text-white text-sm font-medium"
-                                  data-text={` • ${currentSpotifyTrack.name}`}
-                                >
+                                <div className="marquee-content text-white text-sm font-medium">
                                   {currentSpotifyTrack.name}
                                 </div>
                               </div>
                             ) : (
-                              <div className="text-white text-sm font-medium">{currentSpotifyTrack.name}</div>
+                              <div className="text-white text-sm font-medium truncate">{currentSpotifyTrack.name}</div>
                             )}
                           </div>
                         </div>
                       </div>
                     ) : (
-                      // Estado Expandido (mantém o mesmo código)
+                      /* Estado Expandido */
                       <div className="animate-fadeIn">
                         <div className="flex items-center gap-3 mb-3">
                           <div className="relative">
@@ -1388,20 +1446,15 @@ export default function ProfilePage() {
                             <div className="absolute inset-0 bg-black/20 rounded-md"></div>
                           </div>
                           <div className="flex-1 min-w-0 pr-6">
-                            {" "}
-                            {/* Adicionado pr-6 para dar espaço ao ícone */}
                             <div className="text-fade-container">
                               {currentSpotifyTrack.name.length > 20 ? (
                                 <div className="marquee-container">
-                                  <div
-                                    className="marquee-content font-medium text-white text-sm drop-shadow-sm"
-                                    data-text={` • ${currentSpotifyTrack.name}`}
-                                  >
+                                  <div className="marquee-content font-medium text-white text-sm drop-shadow-sm">
                                     {currentSpotifyTrack.name}
                                   </div>
                                 </div>
                               ) : (
-                                <p className="font-medium text-white text-sm drop-shadow-sm">
+                                <p className="font-medium text-white text-sm drop-shadow-sm truncate">
                                   {currentSpotifyTrack.name}
                                 </p>
                               )}
@@ -1964,11 +2017,7 @@ export default function ProfilePage() {
           </Tabs>
         </div>
       </div>
-
-      {/* Canvas oculto para análise de cores */}
-      <canvas ref={colorAnalysisCanvasRef} className="hidden" />
-
-      {/* Modal de Criação de Post */}
+      ;<canvas ref={colorAnalysisCanvasRef} className="hidden" />
       {showCreatePostModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-xl overflow-hidden">
@@ -2092,8 +2141,6 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
-
-      {/* Modal de Edição de Perfil */}
       {showEditProfileModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden">
@@ -2276,8 +2323,6 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
-
-      {/* Modal de YouTube */}
       {showYouTubeModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-7xl h-[90vh] overflow-hidden flex flex-col">
@@ -2414,8 +2459,6 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
-
-      {/* Modal de Avatar */}
       {showAvatarModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden">
