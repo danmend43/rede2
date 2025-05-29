@@ -1306,7 +1306,7 @@ export default function ProfilePage() {
                     style={{
                       background: isPlaying
                         ? spotifyGradient || "linear-gradient(135deg, #1DB954, #191414)"
-                        : "linear-gradient(135deg, #f97316, #ea580c)", // Gradiente laranja para pausado
+                        : "linear-gradient(135deg, #2d3748, #1a202c)", // Gradiente azul-cinza escuro para pausado
                       opacity: isSpotifyExpanded ? 0.85 : 0.95,
                     }}
                   ></div>
@@ -1324,8 +1324,8 @@ export default function ProfilePage() {
                         isSpotifyExpanded
                           ? "bg-[#1DB954] hover:scale-110 hover:bg-[#1ed760] shadow-lg"
                           : isPlaying
-                            ? "bg-[#1DB954] animate-pulse"
-                            : "bg-orange-500 animate-none"
+                            ? "bg-[#1DB954]"
+                            : "bg-gray-600"
                       }`}
                     >
                       <SpotifyIcon className="w-3 h-3 text-white" />
@@ -1345,18 +1345,32 @@ export default function ProfilePage() {
                   >
                     {!isSpotifyExpanded ? (
                       // Estado Mínimo
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 pr-8 overflow-hidden">
                         <div
-                          className={`w-2 h-2 rounded-full ${
-                            isPlaying ? "bg-[#1DB954] animate-pulse" : "bg-orange-500"
+                          className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                            isPlaying ? "bg-[#1DB954]" : "bg-orange-400" // Laranja mais vibrante para contrastar
                           }`}
                         ></div>
-                        <span className="text-white text-sm font-medium truncate drop-shadow-sm">
-                          {isPlaying ? "Ouvindo" : "Pausado"} - {currentSpotifyTrack.name}
-                        </span>
+                        <div className="flex items-center whitespace-nowrap min-w-0 flex-1">
+                          <span className="text-white text-sm font-medium flex-shrink-0">
+                            {isPlaying ? "Ouvindo" : "Pausado"} -{" "}
+                          </span>
+                          <div className="overflow-hidden flex-1 relative">
+                            <div
+                              className={`text-white text-sm font-medium inline-block ${
+                                currentSpotifyTrack.name.length > 20 ? "animate-spotify-marquee" : ""
+                              }`}
+                              style={{
+                                maxWidth: currentSpotifyTrack.name.length > 20 ? "none" : "100%",
+                              }}
+                            >
+                              {currentSpotifyTrack.name}
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     ) : (
-                      // Estado Expandido
+                      // Estado Expandido (mantém o mesmo código)
                       <div className="animate-fadeIn">
                         <div className="flex items-center gap-3 mb-3">
                           <div className="relative">
@@ -1376,9 +1390,7 @@ export default function ProfilePage() {
                             </p>
                             <div className="flex items-center gap-1 mt-1 animate-slideInLeft animation-delay-200">
                               <div
-                                className={`w-2 h-2 rounded-full ${
-                                  isPlaying ? "bg-[#1DB954] animate-pulse" : "bg-orange-500"
-                                }`}
+                                className={`w-2 h-2 rounded-full ${isPlaying ? "bg-[#1DB954]" : "bg-orange-400"}`}
                               ></div>
                               <span className="text-xs text-gray-100">{isPlaying ? "Tocando agora" : "Pausado"}</span>
                             </div>

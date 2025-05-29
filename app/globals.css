@@ -92,3 +92,48 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes spotify-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-100%);
+  }
+  25.01% {
+    transform: translateX(100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+  75% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.animate-spotify-marquee {
+  display: inline-block;
+  white-space: nowrap;
+  animation: spotify-marquee 8s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-marquee {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee 10s linear infinite;
+  animation-delay: 2s;
+  padding-right: 50px;
+}
