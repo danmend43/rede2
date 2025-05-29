@@ -159,7 +159,6 @@ export default function ProfilePage() {
   const [videoComments, setVideoComments] = useState([])
 
   // Estados da edição de perfil
-  const [editProfileSection, setEditProfileSection] = useState("profile")
   const [editingName, setEditingName] = useState("")
   const [editingBio, setEditingBio] = useState("")
   const [editingLocation, setEditingLocation] = useState("")
@@ -1233,6 +1232,52 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="border-t border-gray-100 pt-2">
+                          {/* Connections Section */}
+                          <div className="mb-3">
+                            <div className="px-3 py-2">
+                              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                Conexões
+                              </h4>
+                              <div className="grid grid-cols-2 gap-2">
+                                <button
+                                  onClick={() => {
+                                    if (isSpotifyConnected) {
+                                      handleSpotifyDisconnect()
+                                    } else {
+                                      handleSpotifyConnect()
+                                    }
+                                  }}
+                                  className={`flex items-center gap-2 p-2 rounded-lg text-xs transition-colors ${
+                                    isSpotifyConnected
+                                      ? "bg-green-50 text-green-700 border border-green-200"
+                                      : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                                  }`}
+                                >
+                                  <SpotifyIcon className="w-4 h-4" />
+                                  <span>Spotify</span>
+                                  {isSpotifyConnected && (
+                                    <div className="w-2 h-2 bg-green-500 rounded-full ml-auto"></div>
+                                  )}
+                                </button>
+
+                                <button className="flex items-center gap-2 p-2 rounded-lg text-xs bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors">
+                                  <Music className="w-4 h-4" />
+                                  <span>Deezer</span>
+                                </button>
+
+                                <button className="flex items-center gap-2 p-2 rounded-lg text-xs bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors">
+                                  <Youtube className="w-4 h-4" />
+                                  <span>YouTube</span>
+                                </button>
+
+                                <button className="flex items-center gap-2 p-2 rounded-lg text-xs bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors">
+                                  <Headphones className="w-4 h-4" />
+                                  <span>SoundCloud</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
                           {/* Menu Items */}
                           <button
                             onClick={() => setUserMenuSection("settings")}
@@ -1242,7 +1287,7 @@ export default function ProfilePage() {
                               <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
                                 <Settings className="w-4 h-4 text-gray-600" />
                               </div>
-                              <span className="text-gray-900 font-medium">Configurações e privacidade</span>
+                              <span className="text-gray-900 font-medium text-sm">Configurações e privacidade</span>
                             </div>
                             <ChevronRight className="w-4 h-4 text-gray-400" />
                           </button>
@@ -1255,7 +1300,7 @@ export default function ProfilePage() {
                               <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
                                 <MessageCircle className="w-4 h-4 text-gray-600" />
                               </div>
-                              <span className="text-gray-900 font-medium">Ajuda e suporte</span>
+                              <span className="text-gray-900 font-medium text-sm">Ajuda e suporte</span>
                             </div>
                             <ChevronRight className="w-4 h-4 text-gray-400" />
                           </button>
@@ -1268,7 +1313,7 @@ export default function ProfilePage() {
                               <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
                                 <Eye className="w-4 h-4 text-gray-600" />
                               </div>
-                              <span className="text-gray-900 font-medium">Acessibilidade</span>
+                              <span className="text-gray-900 font-medium text-sm">Acessibilidade</span>
                             </div>
                             <ChevronRight className="w-4 h-4 text-gray-400" />
                           </button>
@@ -1281,7 +1326,7 @@ export default function ProfilePage() {
                               <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
                                 <Palette className="w-4 h-4 text-gray-600" />
                               </div>
-                              <span className="text-gray-900 font-medium">Exibição e acessibilidade</span>
+                              <span className="text-gray-900 font-medium text-sm">Exibição e acessibilidade</span>
                             </div>
                             <ChevronRight className="w-4 h-4 text-gray-400" />
                           </button>
@@ -1289,39 +1334,40 @@ export default function ProfilePage() {
                           <div className="border-t border-gray-100 mt-2 pt-2">
                             <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                               <LogOut className="w-4 h-4 text-gray-600" />
+                              <span className="text-gray-900 font-medium text-sm">Sair</span>
                             </button>
                           </div>
                         </div>
                       </div>
                     )}
 
+                    {/* Manter as outras seções do menu iguais */}
                     {userMenuSection === "settings" && (
                       <div className="p-4">
-                        {/* Back Button */}
                         <button
                           onClick={() => setUserMenuSection("main")}
                           className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg mb-3 transition-colors"
                         >
                           <ChevronLeft className="w-4 h-4 text-gray-600" />
-                          <span className="text-gray-600">Configurações e privacidade</span>
+                          <span className="text-gray-600 text-sm">Configurações e privacidade</span>
                         </button>
 
                         <div className="space-y-1">
                           <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                             <Settings className="w-5 h-5 text-gray-600" />
-                            <span className="text-gray-900">Configurações</span>
+                            <span className="text-gray-900 text-sm">Configurações</span>
                           </button>
                           <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                             <Shield className="w-5 h-5 text-gray-600" />
-                            <span className="text-gray-900">Privacidade</span>
+                            <span className="text-gray-900 text-sm">Privacidade</span>
                           </button>
                           <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                             <Bell className="w-5 h-5 text-gray-600" />
-                            <span className="text-gray-900">Notificações</span>
+                            <span className="text-gray-900 text-sm">Notificações</span>
                           </button>
                           <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                             <Lock className="w-5 h-5 text-gray-600" />
-                            <span className="text-gray-900">Segurança</span>
+                            <span className="text-gray-900 text-sm">Segurança</span>
                           </button>
                         </div>
                       </div>
@@ -1334,25 +1380,25 @@ export default function ProfilePage() {
                           className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg mb-3 transition-colors"
                         >
                           <ChevronLeft className="w-4 h-4 text-gray-600" />
-                          <span className="text-gray-600">Ajuda e suporte</span>
+                          <span className="text-gray-600 text-sm">Ajuda e suporte</span>
                         </button>
 
                         <div className="space-y-1">
                           <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                             <MessageCircle className="w-5 h-5 text-gray-600" />
-                            <span className="text-gray-900">Central de ajuda</span>
+                            <span className="text-gray-900 text-sm">Central de ajuda</span>
                           </button>
                           <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                             <Mail className="w-5 h-5 text-gray-600" />
-                            <span className="text-gray-900">Entrar em contato</span>
+                            <span className="text-gray-900 text-sm">Entrar em contato</span>
                           </button>
                           <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                             <AlertCircle className="w-5 h-5 text-gray-600" />
-                            <span className="text-gray-900">Reportar problema</span>
+                            <span className="text-gray-900 text-sm">Reportar problema</span>
                           </button>
                           <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                             <BookOpen className="w-5 h-5 text-gray-600" />
-                            <span className="text-gray-900">Termos de uso</span>
+                            <span className="text-gray-900 text-sm">Termos de uso</span>
                           </button>
                         </div>
                       </div>
@@ -1365,25 +1411,25 @@ export default function ProfilePage() {
                           className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg mb-3 transition-colors"
                         >
                           <ChevronLeft className="w-4 h-4 text-gray-600" />
-                          <span className="text-gray-600">Acessibilidade</span>
+                          <span className="text-gray-600 text-sm">Acessibilidade</span>
                         </button>
 
                         <div className="space-y-1">
                           <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                             <Eye className="w-5 h-5 text-gray-600" />
-                            <span className="text-gray-900">Leitor de tela</span>
+                            <span className="text-gray-900 text-sm">Leitor de tela</span>
                           </button>
                           <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                             <Type className="w-5 h-5 text-gray-600" />
-                            <span className="text-gray-900">Tamanho da fonte</span>
+                            <span className="text-gray-900 text-sm">Tamanho da fonte</span>
                           </button>
                           <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                             <Zap className="w-5 h-5 text-gray-600" />
-                            <span className="text-gray-900">Reduzir animações</span>
+                            <span className="text-gray-900 text-sm">Reduzir animações</span>
                           </button>
                           <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                             <Volume2 className="w-5 h-5 text-gray-600" />
-                            <span className="text-gray-900">Áudio descrição</span>
+                            <span className="text-gray-900 text-sm">Áudio descrição</span>
                           </button>
                         </div>
                       </div>
@@ -1396,25 +1442,25 @@ export default function ProfilePage() {
                           className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg mb-3 transition-colors"
                         >
                           <ChevronLeft className="w-4 h-4 text-gray-600" />
-                          <span className="text-gray-600">Exibição e acessibilidade</span>
+                          <span className="text-gray-600 text-sm">Exibição e acessibilidade</span>
                         </button>
 
                         <div className="space-y-1">
                           <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                             <Palette className="w-5 h-5 text-gray-600" />
-                            <span className="text-gray-900">Modo escuro</span>
+                            <span className="text-gray-900 text-sm">Modo escuro</span>
                           </button>
                           <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                             <Monitor className="w-5 h-5 text-gray-600" />
-                            <span className="text-gray-900">Compactar feeds</span>
+                            <span className="text-gray-900 text-sm">Compactar feeds</span>
                           </button>
                           <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                             <Smartphone className="w-5 h-5 text-gray-600" />
-                            <span className="text-gray-900">Modo móvel</span>
+                            <span className="text-gray-900 text-sm">Modo móvel</span>
                           </button>
                           <button className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                             <Languages className="w-5 h-5 text-gray-600" />
-                            <span className="text-gray-900">Idioma</span>
+                            <span className="text-gray-900 text-sm">Idioma</span>
                           </button>
                         </div>
                       </div>
@@ -2359,198 +2405,111 @@ export default function ProfilePage() {
       {/* Edit Profile Modal */}
       {showEditProfileModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden">
+          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold">Editar perfil</h3>
-              <Button variant="ghost" size="sm" onClick={() => setShowEditProfileModal(false)}>
-                <X className="w-4 h-4" />
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" size="sm" onClick={handleCancelEdit}>
+                  <X className="w-5 h-5" />
+                </Button>
+                <h3 className="text-lg font-semibold">Edit profile</h3>
+              </div>
+              <Button
+                onClick={handleEditProfileSave}
+                className="bg-black text-white hover:bg-gray-800 rounded-full px-6"
+              >
+                Save
               </Button>
             </div>
-            <div className="p-4">
-              <div className="flex border-b">
-                <button
-                  className={`px-4 py-2 font-medium ${
-                    editProfileSection === "profile" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-600"
-                  }`}
-                  onClick={() => setEditProfileSection("profile")}
+
+            <div className="p-6 space-y-6">
+              {/* Cover Image */}
+              <div className="relative">
+                <div
+                  className="relative h-32 rounded-xl overflow-hidden bg-gray-200"
+                  style={{
+                    background:
+                      tempCoverImage && tempCoverImage !== "/placeholder.svg?height=192&width=768"
+                        ? "none"
+                        : autoGradient || "linear-gradient(to-r, #3b82f6, #8b5cf6)",
+                  }}
                 >
-                  Perfil
-                </button>
-                <button
-                  className={`px-4 py-2 font-medium ${
-                    editProfileSection === "appearance" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-600"
-                  }`}
-                  onClick={() => setEditProfileSection("appearance")}
-                >
-                  Aparência
-                </button>
-                <button
-                  className={`px-4 py-2 font-medium ${
-                    editProfileSection === "connections" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-600"
-                  }`}
-                  onClick={() => setEditProfileSection("connections")}
-                >
-                  Conexões
-                </button>
+                  {tempCoverImage && tempCoverImage !== "/placeholder.svg?height=192&width=768" && !tempCoverRemoved ? (
+                    <img
+                      src={tempCoverImage || "/placeholder.svg"}
+                      alt="Cover"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : null}
+
+                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                    <button
+                      onClick={() => tempCoverInputRef.current?.click()}
+                      className="w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition-colors"
+                    >
+                      <Upload className="w-5 h-5 text-white" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Profile Picture */}
+                <div className="absolute -bottom-8 left-6">
+                  <div className="relative">
+                    <Avatar className="w-24 h-24 border-4 border-white shadow-lg">
+                      <AvatarImage src={tempAvatarImage || "/placeholder.svg"} />
+                      <AvatarFallback className="text-xl"></AvatarFallback>
+                    </Avatar>
+                    <button
+                      onClick={() => tempAvatarInputRef.current?.click()}
+                      className="absolute inset-0 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition-colors"
+                    >
+                      <Upload className="w-5 h-5 text-white" />
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              {editProfileSection === "profile" && (
-                <div className="space-y-4 py-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-                    <Input
-                      value={editingName}
-                      onChange={(e) => setEditingName(e.target.value)}
-                      className="w-full"
-                      placeholder="Seu nome"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
-                    <textarea
-                      value={editingBio}
-                      onChange={(e) => setEditingBio(e.target.value)}
-                      className="w-full border rounded-lg p-3 min-h-[120px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Conte um pouco sobre você"
-                    ></textarea>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Localização</label>
-                    <Input
-                      value={editingLocation}
-                      onChange={(e) => setEditingLocation(e.target.value)}
-                      className="w-full"
-                      placeholder="Sua localização"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
-                    <Input
-                      value={editingWebsite}
-                      onChange={(e) => setEditingWebsite(e.target.value)}
-                      className="w-full"
-                      placeholder="Seu website"
-                    />
-                  </div>
+              {/* Form Fields */}
+              <div className="space-y-4 pt-8">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                  <Input
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    className="w-full border-gray-300 rounded-lg"
+                    placeholder="Your name"
+                  />
                 </div>
-              )}
 
-              {editProfileSection === "appearance" && (
-                <div className="space-y-6 py-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Imagem de capa</label>
-                    <div
-                      className="relative h-32 rounded-lg overflow-hidden bg-gray-100"
-                      style={{
-                        background:
-                          tempCoverImage && tempCoverImage !== "/placeholder.svg?height=192&width=768"
-                            ? "none"
-                            : autoGradient || "linear-gradient(to-r, #3b82f6, #8b5cf6)",
-                      }}
-                    >
-                      {tempCoverImage && tempCoverImage !== "/placeholder.svg?height=192&width=768" ? (
-                        <img
-                          src={tempCoverImage || "/placeholder.svg"}
-                          alt="Cover"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 bg-black/20"></div>
-                      )}
-                      <div className="absolute bottom-2 right-2 flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="bg-white/90"
-                          onClick={() => tempCoverInputRef.current?.click()}
-                        >
-                          <Upload className="w-4 h-4 mr-2" />
-                          Alterar
-                        </Button>
-                        {!tempCoverRemoved &&
-                          tempCoverImage !== "/placeholder.svg?height=192&width=768" &&
-                          tempCoverImage && (
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              className="bg-red-600/90 hover:bg-red-700/90 text-white"
-                              onClick={() => setShowRemoveCoverModal(true)}
-                            >
-                              <X className="w-4 h-4 mr-2" />
-                              Remover
-                            </Button>
-                          )}
-                        {tempCoverRemoved && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="bg-white/90"
-                            onClick={() => {
-                              setTempCoverRemoved(false)
-                              setTempCoverImage(coverImage)
-                            }}
-                          >
-                            <Upload className="w-4 h-4 mr-2" />
-                            Restaurar
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Foto de perfil</label>
-                    <div className="flex items-center gap-4">
-                      <Avatar className="w-24 h-24 border-4 border-white shadow-md">
-                        <AvatarImage src={tempAvatarImage || "/placeholder.svg"} />
-                        <AvatarFallback className="text-2xl"></AvatarFallback>
-                      </Avatar>
-                      <Button variant="outline" size="sm" onClick={() => tempAvatarInputRef.current?.click()}>
-                        <Upload className="w-4 h-4 mr-2" />
-                        Alterar
-                      </Button>
-                    </div>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+                  <textarea
+                    value={editingBio}
+                    onChange={(e) => setEditingBio(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg p-3 min-h-[80px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                    placeholder="Tell us about yourself"
+                  />
                 </div>
-              )}
 
-              {editProfileSection === "connections" && (
-                <div className="space-y-4 py-4">
-                  <p className="text-sm text-gray-600 mb-4">
-                    Conecte suas contas de redes sociais para compartilhar atividades e aumentar seu alcance.
-                  </p>
-
-                  {socialPlatforms.map((platform) => (
-                    <div
-                      key={platform.name}
-                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-full bg-gray-100 ${platform.color}`}>
-                          <platform.icon className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium">{platform.name}</h4>
-                          <p className="text-xs text-gray-500">{platform.connected ? "Conectado" : "Não conectado"}</p>
-                        </div>
-                      </div>
-                      <Button
-                        variant={platform.connected ? "destructive" : "outline"}
-                        size="sm"
-                        onClick={platform.onToggle}
-                      >
-                        {platform.connected ? "Desconectar" : "Conectar"}
-                      </Button>
-                    </div>
-                  ))}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                  <Input
+                    value={editingLocation}
+                    onChange={(e) => setEditingLocation(e.target.value)}
+                    className="w-full border-gray-300 rounded-lg"
+                    placeholder="Your location"
+                  />
                 </div>
-              )}
-            </div>
-            <div className="p-4 border-t flex justify-end gap-2">
-              <Button variant="outline" onClick={handleCancelEdit}>
-                Cancelar
-              </Button>
-              <Button onClick={handleEditProfileSave}>Salvar</Button>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
+                  <Input
+                    value={editingWebsite}
+                    onChange={(e) => setEditingWebsite(e.target.value)}
+                    className="w-full border-gray-300 rounded-lg"
+                    placeholder="Your website"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -2758,6 +2717,140 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+      {/* Footer */}
+      <footer className="bg-gray-50 border-t border-gray-200 mt-16">
+        <div className="max-w-6xl mx-auto px-6 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">B</span>
+                </div>
+                <span className="text-xl font-bold text-gray-900">BILIBILI</span>
+              </div>
+              <p className="text-gray-600 text-sm">
+                A plataforma definitiva para criadores de conteúdo compartilharem suas paixões e se conectarem com
+                comunidades incríveis.
+              </p>
+              <div className="flex gap-3">
+                <button className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors">
+                  <Youtube className="w-4 h-4 text-gray-600" />
+                </button>
+                <button className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors">
+                  <Music className="w-4 h-4 text-gray-600" />
+                </button>
+                <button className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors">
+                  <MessageCircle className="w-4 h-4 text-gray-600" />
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-4">Plataforma</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>
+                  <a href="#" className="hover:text-gray-900 transition-colors">
+                    Início
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900 transition-colors">
+                    Explorar
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900 transition-colors">
+                    Trending
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900 transition-colors">
+                    Comunidade
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900 transition-colors">
+                    Criador Studio
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-4">Recursos</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>
+                  <a href="#" className="hover:text-gray-900 transition-colors">
+                    Analytics
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900 transition-colors">
+                    Monetização
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900 transition-colors">
+                    API
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900 transition-colors">
+                    Parcerias
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900 transition-colors">
+                    Desenvolvedores
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-4">Suporte</h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>
+                  <a href="#" className="hover:text-gray-900 transition-colors">
+                    Central de Ajuda
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900 transition-colors">
+                    Contato
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900 transition-colors">
+                    Termos de Uso
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900 transition-colors">
+                    Privacidade
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-gray-900 transition-colors">
+                    Cookies
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-200 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-sm text-gray-500">© 2024 BILIBILI. Todos os direitos reservados.</p>
+            <div className="flex items-center gap-6 mt-4 md:mt-0">
+              <span className="text-sm text-gray-500">Feito com ❤️ para criadores</span>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Todos os sistemas operacionais</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
