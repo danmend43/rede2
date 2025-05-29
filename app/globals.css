@@ -156,14 +156,13 @@ body {
   width: 20px;
   z-index: 1;
   pointer-events: none;
+  background: none; /* Removendo qualquer background */
 }
 
 .text-fade-container::after {
   right: 0;
-  background: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 1));
 }
 
 .text-fade-container::before {
   left: 0;
-  background: linear-gradient(to left, rgba(255, 255, 255, 0), rgba(255, 255, 255, 1));
 }
