@@ -2409,13 +2409,6 @@ export default function ProfilePage() {
 
           <div className="border-t border-gray-200 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-sm text-gray-500">© 2024 BILIBILI. Todos os direitos reservados.</p>
-            <div className="flex items-center gap-6 mt-4 md:mt-0">
-              <span className="text-sm text-gray-500">Feito com ❤️ para criadores</span>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>Todos os sistemas operacionais</span>
-              </div>
-            </div>
           </div>
         </div>
       </footer>
