@@ -1562,7 +1562,7 @@ export default function ProfilePage() {
                           </CardContent>
                         </Card>
                       ) : (
-                        // List View - Original Style
+                        // List View
                         <Card
                           key={post.id}
                           className="overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 rounded-2xl bg-white transform hover:scale-[1.02]"
@@ -2280,113 +2280,134 @@ export default function ProfilePage() {
       {/* Modal de YouTube */}
       {showYouTubeModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-4xl overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b">
+          <div className="bg-white rounded-2xl w-full max-w-7xl h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b flex-shrink-0">
               <h3 className="text-lg font-semibold truncate flex-1">{currentVideoData?.title || "Assistir vídeo"}</h3>
               <Button variant="ghost" size="sm" onClick={closeYouTubeModal}>
                 <X className="w-4 h-4" />
               </Button>
             </div>
-            <div className="aspect-video bg-black">
-              <iframe
-                src={getYouTubeEmbedUrl(currentYouTubeUrl)}
-                className="w-full h-full"
-                allowFullScreen
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              ></iframe>
-            </div>
-            <div className="p-4 space-y-4">
-              <div>
-                <h2 className="text-xl font-bold">{currentVideoData?.title || "Título do vídeo"}</h2>
-                <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
-                  <span>{formatNumber(currentVideoData?.stats?.views || 0)} visualizações</span>
-                  <span>•</span>
-                  <span>{currentVideoData?.timestamp || "há 1 dia"}</span>
+
+            <div className="flex flex-1 overflow-hidden">
+              {/* Lado esquerdo - Vídeo e informações */}
+              <div className="flex-1 flex flex-col">
+                <div className="aspect-video bg-black flex-shrink-0">
+                  <iframe
+                    src={getYouTubeEmbedUrl(currentYouTubeUrl)}
+                    className="w-full h-full"
+                    allowFullScreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  ></iframe>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-4 py-2 border-y">
-                <button className="flex items-center gap-2 text-gray-700 hover:text-red-600 transition-colors">
-                  <Heart className="w-5 h-5" />
-                  <span>{formatNumber(currentVideoData?.stats?.likes || 0)}</span>
-                </button>
-                <button className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors">
-                  <MessageCircle className="w-5 h-5" />
-                  <span>{formatNumber(currentVideoData?.stats?.comments || 0)}</span>
-                </button>
-                <button className="flex items-center gap-2 text-gray-700 hover:text-green-600 transition-colors">
-                  <Share className="w-5 h-5" />
-                  <span>{formatNumber(currentVideoData?.stats?.shares || 0)}</span>
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage
-                      src={currentVideoData?.author?.avatar || avatarImage || "/placeholder.svg"}
-                      alt={currentVideoData?.author?.name || "Author"}
-                    />
-                    <AvatarFallback>{(currentVideoData?.author?.name || "A").charAt(0).toUpperCase()}</AvatarFallback>
-                  </Avatar>
+                <div className="p-6 space-y-4 overflow-y-auto">
                   <div>
-                    <div className="flex items-center gap-1">
-                      <span className="font-medium">{currentVideoData?.author?.name || "Nome do autor"}</span>
-                      {currentVideoData?.author?.verified && <Verified className="w-4 h-4 text-blue-500" />}
-                    </div>
-                    <p className="text-sm text-gray-600">{currentVideoData?.author?.username || "@username"}</p>
-                  </div>
-                </div>
-
-                <p className="text-gray-800 whitespace-pre-line">{currentVideoData?.content || ""}</p>
-              </div>
-
-              <div className="space-y-4 pt-4 border-t">
-                <h3 className="font-medium">Comentários ({formatNumber(videoComments.length)})</h3>
-
-                <div className="flex gap-3">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={avatarImage || "/placeholder.svg"} />
-                    <AvatarFallback>{userProfile.name[0]}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Adicione um comentário..."
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      className="mb-2"
-                    />
-                    <div className="flex justify-end">
-                      <Button size="sm" onClick={handleAddComment} disabled={!newComment.trim()}>
-                        Comentar
-                      </Button>
+                    <h2 className="text-xl font-bold">{currentVideoData?.title || "Título do vídeo"}</h2>
+                    <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
+                      <span>{formatNumber(currentVideoData?.stats?.views || 0)} visualizações</span>
+                      <span>•</span>
+                      <span>{currentVideoData?.timestamp || "há 1 dia"}</span>
                     </div>
                   </div>
-                </div>
 
-                <div className="space-y-4 max-h-[300px] overflow-y-auto">
-                  {videoComments.map((comment: any) => (
-                    <div key={comment.id} className="flex gap-3">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src={comment.avatar || "/placeholder.svg"} />
-                        <AvatarFallback>{comment.user[0]}</AvatarFallback>
+                  <div className="flex items-center gap-4 py-2 border-y">
+                    <button className="flex items-center gap-2 text-gray-700 hover:text-red-600 transition-colors">
+                      <Heart className="w-5 h-5" />
+                      <span>{formatNumber(currentVideoData?.stats?.likes || 0)}</span>
+                    </button>
+                    <button className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors">
+                      <MessageCircle className="w-5 h-5" />
+                      <span>{formatNumber(currentVideoData?.stats?.comments || 0)}</span>
+                    </button>
+                    <button className="flex items-center gap-2 text-gray-700 hover:text-green-600 transition-colors">
+                      <Share className="w-5 h-5" />
+                      <span>{formatNumber(currentVideoData?.stats?.shares || 0)}</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage
+                          src={currentVideoData?.author?.avatar || avatarImage || "/placeholder.svg"}
+                          alt={currentVideoData?.author?.name || "Author"}
+                        />
+                        <AvatarFallback>
+                          {(currentVideoData?.author?.name || "A").charAt(0).toUpperCase()}
+                        </AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{comment.user}</span>
-                          <span className="text-xs text-gray-500">{comment.timestamp}</span>
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">{currentVideoData?.author?.name || "Nome do autor"}</span>
+                          {currentVideoData?.author?.verified && <Verified className="w-4 h-4 text-blue-500" />}
                         </div>
-                        <p className="text-gray-800">{comment.comment}</p>
-                        <div className="flex items-center gap-3 mt-1 text-sm">
-                          <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700">
-                            <Heart className="w-3.5 h-3.5" />
-                            <span>{comment.likes}</span>
-                          </button>
-                          <button className="text-gray-500 hover:text-gray-700">Responder</button>
-                        </div>
+                        <p className="text-sm text-gray-600">{currentVideoData?.author?.username || "@username"}</p>
                       </div>
                     </div>
-                  ))}
+
+                    <p className="text-gray-800 whitespace-pre-line">{currentVideoData?.content || ""}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Lado direito - Comentários */}
+              <div className="w-96 border-l bg-gray-50 flex flex-col">
+                <div className="p-4 border-b bg-white">
+                  <h3 className="font-medium text-lg">Comentários ({formatNumber(videoComments.length)})</h3>
+                </div>
+
+                <div className="p-4 border-b bg-white">
+                  <div className="flex gap-3">
+                    <Avatar className="w-8 h-8 flex-shrink-0">
+                      <AvatarImage src={avatarImage || "/placeholder.svg"} />
+                      <AvatarFallback>{userProfile.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <textarea
+                        placeholder="Adicione um comentário..."
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        className="w-full border rounded-lg p-2 text-sm resize-none h-20 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <div className="flex justify-end mt-2">
+                        <Button size="sm" onClick={handleAddComment} disabled={!newComment.trim()}>
+                          Comentar
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {videoComments.length === 0 ? (
+                    <div className="text-center text-gray-500 py-8">
+                      <MessageCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                      <p className="text-sm">Seja o primeiro a comentar!</p>
+                    </div>
+                  ) : (
+                    videoComments.map((comment: any) => (
+                      <div key={comment.id} className="flex gap-3">
+                        <Avatar className="w-8 h-8 flex-shrink-0">
+                          <AvatarImage src={comment.avatar || "/placeholder.svg"} />
+                          <AvatarFallback>{comment.user[0]}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-sm">{comment.user}</span>
+                            <span className="text-xs text-gray-500">{comment.timestamp}</span>
+                          </div>
+                          <p className="text-sm text-gray-800 break-words">{comment.comment}</p>
+                          <div className="flex items-center gap-3 mt-2 text-xs">
+                            <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors">
+                              <Heart className="w-3 h-3" />
+                              <span>{comment.likes}</span>
+                            </button>
+                            <button className="text-gray-500 hover:text-gray-700 transition-colors">Responder</button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
