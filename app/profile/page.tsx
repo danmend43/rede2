@@ -262,7 +262,7 @@ export default function ProfilePage() {
     },
   ]
 
-  // Refs para inputs de arquivo
+  // Refs para inputs de arquivo .
   const coverInputRef = useRef<HTMLInputElement>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const postMediaInputRef = useRef<HTMLInputElement>(null)
