@@ -118,6 +118,7 @@ export default function ProfilePage() {
   const [currentSpotifyTrack, setCurrentSpotifyTrack] = useState<any>(null)
   const [isSpotifyConnected, setIsSpotifyConnected] = useState(false)
   const [spotifyError, setSpotifyError] = useState<string | null>(null)
+  const [spotifyGradient, setSpotifyGradient] = useState<string | null>(null)
 
   // Estado do mega menu
   const [megaMenuDescription, setMegaMenuDescription] = useState("Descubra mais conteúdo incrível na nossa plataforma")
@@ -262,7 +263,7 @@ export default function ProfilePage() {
     },
   ]
 
-  // Refs para inputs de arquivo .
+  // Refs para inputs de arquivo
   const coverInputRef = useRef<HTMLInputElement>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const postMediaInputRef = useRef<HTMLInputElement>(null)
@@ -388,6 +389,11 @@ export default function ProfilePage() {
         const data = await response.json()
         if (data && data.item && data.is_playing) {
           setCurrentSpotifyTrack(data.item)
+
+          // Analisar cores da imagem do álbum se disponível
+          if (data.item.album?.images?.[0]?.url) {
+            extractSpotifyAlbumColors(data.item.album.images[0].url)
+          }
         } else {
           setCurrentSpotifyTrack(null)
         }
@@ -771,6 +777,86 @@ export default function ProfilePage() {
     img.src = imageUrl
   }, [])
 
+  // Função para extrair cores da imagem do álbum do Spotify
+  const extractSpotifyAlbumColors = useCallback((imageUrl: string) => {
+    const canvas = document.createElement("canvas")
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    const img = new Image()
+    img.crossOrigin = "anonymous"
+
+    img.onload = () => {
+      // Redimensionar para análise mais rápida
+      const maxSize = 100
+      const ratio = Math.min(maxSize / img.width, maxSize / img.height)
+      const width = img.width * ratio
+      const height = img.height * ratio
+
+      canvas.width = width
+      canvas.height = height
+
+      ctx.drawImage(img, 0, 0, width, height)
+
+      const imageData = ctx.getImageData(0, 0, width, height)
+      const data = imageData.data
+
+      const colorMap = new Map<string, DominantColor>()
+
+      // Analisar pixels
+      for (let i = 0; i < data.length; i += 16) {
+        const r = data[i]
+        const g = data[i + 1]
+        const b = data[i + 2]
+        const alpha = data[i + 3]
+
+        // Ignorar pixels transparentes ou muito escuros/claros
+        if (alpha < 128 || r + g + b < 50 || r + g + b > 650) continue
+
+        // Agrupar cores similares
+        const roundedR = Math.round(r / 20) * 20
+        const roundedG = Math.round(g / 20) * 20
+        const roundedB = Math.round(b / 20) * 20
+
+        const key = `${roundedR},${roundedG},${roundedB}`
+
+        if (colorMap.has(key)) {
+          colorMap.get(key)!.count++
+        } else {
+          colorMap.set(key, { r: roundedR, g: roundedG, b: roundedB, count: 1 })
+        }
+      }
+
+      // Ordenar por frequência e pegar as top 5
+      const sortedColors = Array.from(colorMap.values())
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5)
+
+      // Gerar gradiente para o Spotify
+      generateSpotifyGradient(sortedColors)
+    }
+
+    img.src = imageUrl
+  }, [])
+
+  // Função para gerar gradiente para o card do Spotify
+  const generateSpotifyGradient = (colors: DominantColor[]) => {
+    if (colors.length === 0) {
+      setSpotifyGradient("linear-gradient(135deg, #1DB954, #191414)")
+      return
+    }
+
+    const primaryColor = colors[0]
+    const secondaryColor = colors[1] || primaryColor
+
+    // Criar versões mais escuras e suaves para o gradiente
+    const darkPrimary = `rgba(${Math.round(primaryColor.r * 0.4)}, ${Math.round(primaryColor.g * 0.4)}, ${Math.round(primaryColor.b * 0.4)}, 0.9)`
+    const lightSecondary = `rgba(${Math.round(secondaryColor.r * 0.6)}, ${Math.round(secondaryColor.g * 0.6)}, ${Math.round(secondaryColor.b * 0.6)}, 0.8)`
+
+    const gradient = `linear-gradient(135deg, ${darkPrimary}, ${lightSecondary})`
+    setSpotifyGradient(gradient)
+  }
+
   // Adicionar função para gerar gradiente automático
   const generateAutoGradient = (colors: DominantColor[]) => {
     if (colors.length === 0) {
@@ -1105,23 +1191,40 @@ export default function ProfilePage() {
             <div className="lg:w-80 space-y-6" style={{ marginTop: "10px" }}>
               {/* Spotify Section - só mostra quando há música tocando */}
               {isSpotifyConnected && currentSpotifyTrack && (
-                <Card className="bg-white border border-gray-200">
-                  <CardContent className="p-3">
-                    <div className="flex items-center gap-2">
+                <Card className="relative overflow-hidden border border-gray-200">
+                  <div
+                    className="absolute inset-0 z-0"
+                    style={{
+                      background: spotifyGradient || "linear-gradient(135deg, #1DB954, #191414)",
+                      opacity: 0.85,
+                    }}
+                  ></div>
+
+                  {/* Ícone do Spotify no canto superior direito */}
+                  <div className="absolute top-2 right-2 z-10">
+                    <div className="w-5 h-5 bg-[#1DB954] rounded-full flex items-center justify-center">
+                      <Music className="w-3 h-3 text-white" />
+                    </div>
+                  </div>
+
+                  <CardContent className="p-3 relative z-10">
+                    <div className="flex items-center gap-3">
                       <img
                         src={currentSpotifyTrack.album?.images?.[2]?.url || "/placeholder.svg"}
                         alt="Album cover"
-                        className="w-10 h-10 rounded object-cover"
+                        className="w-12 h-12 rounded-md object-cover shadow-md"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 truncate text-sm">{currentSpotifyTrack.name}</p>
-                        <p className="text-xs text-gray-600 truncate">
+                        <p className="font-medium text-white truncate text-sm drop-shadow-sm">
+                          {currentSpotifyTrack.name}
+                        </p>
+                        <p className="text-xs text-gray-100 truncate opacity-90">
                           {currentSpotifyTrack.artists?.map((artist) => artist.name).join(", ")}
                         </p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <Music className="w-4 h-4 text-green-500" />
+                        <div className="flex items-center gap-1 mt-1">
+                          <div className="w-2 h-2 bg-[#1DB954] rounded-full animate-pulse"></div>
+                          <span className="text-xs text-gray-100">Tocando agora no Spotify</span>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
