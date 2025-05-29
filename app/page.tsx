@@ -2445,8 +2445,7 @@ export default function ProfilePage() {
                 <span className="text-xl font-bold text-gray-900">BILIBILI</span>
               </div>
               <p className="text-gray-600 text-sm">
-                A plataforma definitiva para criadores de conteúdo compartilharem suas paixões e se conectarem com
-                comunidades incríveis.
+                A plataforma legal :D
               </p>
               <div className="flex gap-3">
                 <button className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors">
