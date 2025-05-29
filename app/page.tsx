@@ -1,14 +1,13 @@
 "use client"
 
 import type React from "react"
-import { Edit, X, Smile, Youtube, Menu } from "lucide-react"
+import { Edit, X, Youtube, Menu } from "lucide-react"
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -33,11 +32,7 @@ import {
   Grid3X3,
   List,
   Crown,
-  ImageIcon,
   BarChart3,
-  LocateIcon as LocationIcon,
-  ThumbsUp,
-  ThumbsDown,
   Home,
   Compass,
   Users,
@@ -51,11 +46,6 @@ import {
   Headphones,
   Code,
   Sparkles,
-  User,
-  Paintbrush,
-  Wifi,
-  Shield,
-  ExternalLink,
   AlertCircle,
 } from "lucide-react"
 
@@ -86,11 +76,7 @@ export default function ProfilePage() {
   const [avatarImage, setAvatarImage] = useState("/placeholder.svg?height=128&width=128")
 
   // Estados dos modais
-  const [showCreatePostModal, setShowCreatePostModal] = useState(false)
-  const [showEditProfileModal, setShowEditProfileModal] = useState(false)
-  const [showAvatarModal, setShowAvatarModal] = useState(false)
-  const [showYouTubeModal, setShowYouTubeModal] = useState(false)
-  const [showMegaMenu, setShowMegaMenu] = useState(false)
+  const [showCreatePostModal, setShowEditProfileModal, setShowAvatarModal, setShowYouTubeModal] = useState(false)
 
   // Estados do post
   const [newPostContent, setNewPostContent] = useState("")
@@ -133,6 +119,7 @@ export default function ProfilePage() {
 
   // Estado do mega menu
   const [megaMenuDescription, setMegaMenuDescription] = useState("Descubra mais conteúdo incrível na nossa plataforma")
+  const [showMegaMenuState, setShowMegaMenuState] = useState(false)
 
   // Perfil do usuário
   const [userProfile, setUserProfile] = useState({
@@ -1058,14 +1045,14 @@ export default function ProfilePage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setShowMegaMenu(!showMegaMenu)}
+                      onClick={() => setShowMegaMenuState(!showMegaMenuState)}
                       className="p-2 hover:bg-gray-100 rounded-lg"
                     >
                       <Menu className="w-5 h-5 text-gray-600" />
                     </Button>
 
                     {/* Mega Menu */}
-                    {showMegaMenu && (
+                    {showMegaMenuState && (
                       <div className="absolute top-full left-0 mt-2 w-[800px] bg-white border border-gray-200 rounded-2xl shadow-2xl z-50">
                         <div className="p-6">
                           <div className="grid grid-cols-4 gap-8">
@@ -1101,7 +1088,7 @@ export default function ProfilePage() {
                             <div className="flex items-center justify-between">
                               <div className="text-sm text-gray-500">{megaMenuDescription}</div>
                               <Button
-                                onClick={() => setShowMegaMenu(false)}
+                                onClick={() => setShowMegaMenuState(false)}
                                 variant="outline"
                                 size="sm"
                                 className="text-gray-500 hover:text-gray-700"
@@ -1165,7 +1152,9 @@ export default function ProfilePage() {
         </div>
 
         {/* Overlay para fechar o mega menu */}
-        {showMegaMenu && <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setShowMegaMenu(false)} />}
+        {showMegaMenuState && (
+          <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setShowMegaMenuState(false)} />
+        )}
       </header>
 
       <div className="max-w-6xl mx-auto px-6">
@@ -1301,10 +1290,14 @@ export default function ProfilePage() {
               {/* Spotify Section - só mostra quando há música tocando */}
               {isSpotifyConnected && currentSpotifyTrack && (
                 <Card
-                  className={`relative overflow-hidden border border-gray-200 transition-all duration-500 ease-in-out cursor-pointer ${
-                    isSpotifyExpanded ? "transform scale-100" : "hover:scale-105 hover:shadow-lg"
+                  className={`relative overflow-hidden border border-gray-200 transition-all duration-500 ease-in-out ${
+                    isSpotifyExpanded ? "transform scale-100" : "hover:scale-105 hover:shadow-lg cursor-pointer"
                   }`}
-                  onClick={() => !isSpotifyExpanded && setIsSpotifyExpanded(true)}
+                  onClick={() => {
+                    if (!isSpotifyExpanded) {
+                      setIsSpotifyExpanded(true)
+                    }
+                  }}
                 >
                   {/* Background gradiente */}
                   <div
@@ -1322,7 +1315,9 @@ export default function ProfilePage() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        setIsSpotifyExpanded(false)
+                        if (isSpotifyExpanded) {
+                          setIsSpotifyExpanded(false)
+                        }
                       }}
                       className={`w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 ${
                         isSpotifyExpanded
@@ -1340,6 +1335,12 @@ export default function ProfilePage() {
                     className={`relative z-10 transition-all duration-500 ease-in-out ${
                       isSpotifyExpanded ? "p-3" : "p-2"
                     }`}
+                    onClick={(e) => {
+                      if (isSpotifyExpanded) {
+                        e.stopPropagation()
+                        setIsSpotifyExpanded(false)
+                      }
+                    }}
                   >
                     {!isSpotifyExpanded ? (
                       // Estado Mínimo
@@ -1768,50 +1769,47 @@ export default function ProfilePage() {
                                 </Button>
                               </div>
 
-                              {/* Conteúdo do Vídeo */}
                               <div className="space-y-4">
-                                {/* Layout dividido: conteúdo à esquerda, thumbnail à direita */}
                                 <div className="flex gap-6">
-                                  {/* Lado esquerdo - Conteúdo */}
                                   <div className="flex-1">
                                     <p className="text-gray-900 leading-relaxed text-base">{video.content}</p>
                                   </div>
 
-                                  {/* Lado direito - Thumbnail do vídeo */}
-                                  <div className="w-48 flex-shrink-0">
-                                    <div className="relative rounded-xl overflow-hidden shadow-md h-32 bg-gray-100">
-                                      <img
-                                        src={video.thumbnail || "/placeholder.svg"}
-                                        alt="Video thumbnail"
-                                        className="w-full h-full object-cover cursor-pointer"
-                                        onClick={() => {
-                                          if (video.type === "youtube" && video.youtubeUrl) {
-                                            openYouTubeModal(video.youtubeUrl, video)
-                                          }
-                                        }}
-                                      />
-                                      <div
-                                        className="absolute inset-0 bg-black/20 flex items-center justify-center cursor-pointer"
-                                        onClick={() => {
-                                          if (video.type === "youtube" && video.youtubeUrl) {
-                                            openYouTubeModal(video.youtubeUrl, video)
-                                          }
-                                        }}
-                                      >
-                                        <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors shadow-lg">
-                                          <Play className="w-5 h-5 text-white ml-0.5" />
+                                  {video.thumbnail && (
+                                    <div className="w-48 flex-shrink-0">
+                                      <div className="relative rounded-xl overflow-hidden shadow-md h-32 bg-gray-100">
+                                        <img
+                                          src={video.thumbnail || "/placeholder.svg"}
+                                          alt="Video thumbnail"
+                                          className="w-full h-full object-cover cursor-pointer"
+                                          onClick={() => {
+                                            if (video.type === "youtube" && video.youtubeUrl) {
+                                              openYouTubeModal(video.youtubeUrl, video)
+                                            }
+                                          }}
+                                        />
+                                        <div
+                                          className="absolute inset-0 bg-black/20 flex items-center justify-center cursor-pointer"
+                                          onClick={() => {
+                                            if (video.type === "youtube" && video.youtubeUrl) {
+                                              openYouTubeModal(video.youtubeUrl, video)
+                                            }
+                                          }}
+                                        >
+                                          <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors shadow-lg">
+                                            <Play className="w-5 h-5 text-white ml-0.5" />
+                                          </div>
                                         </div>
+                                        {video.duration && (
+                                          <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
+                                            {video.duration}
+                                          </div>
+                                        )}
                                       </div>
-                                      {video.duration && (
-                                        <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
-                                          {video.duration}
-                                        </div>
-                                      )}
                                     </div>
-                                  </div>
+                                  )}
                                 </div>
 
-                                {/* Ações do Vídeo - Movidas para baixo */}
                                 <div className="flex items-center gap-6 pt-4 border-t border-gray-100 mt-4">
                                   <button className="flex items-center gap-2 text-gray-500 hover:text-red-500 transition-colors group">
                                     <div className="p-2 rounded-full group-hover:bg-red-50 transition-colors">
@@ -1848,7 +1846,7 @@ export default function ProfilePage() {
                   <div className="flex flex-col items-center justify-center h-96 text-gray-500">
                     <Play className="w-16 h-16 mb-4 text-gray-300" />
                     <h3 className="text-lg font-medium mb-2">Nenhum vídeo ainda</h3>
-                    <p className="text-sm text-center">Quando você criar vídeos, eles aparecerão aqui.</p>
+                    <p className="text-sm text-center">Quando você postar vídeos, eles aparecerão aqui.</p>
                   </div>
                 )}
               </div>
@@ -1860,26 +1858,23 @@ export default function ProfilePage() {
                 {collections.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {collections.map((collection) => (
-                      <Card
-                        key={collection.id}
-                        className="overflow-hidden hover:shadow-lg transition-all duration-300 border-gray-100 transform hover:scale-105 cursor-pointer"
-                      >
+                      <Card key={collection.id} className="overflow-hidden hover:shadow-lg transition-all duration-300">
                         <div className="relative">
                           <img
                             src={collection.thumbnail || "/placeholder.svg"}
                             alt={collection.name}
                             className="w-full h-40 object-cover"
                           />
-                          <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
-                            {collection.videoCount} vídeos
+                          <div className="absolute top-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
+                            {collection.itemCount} itens
                           </div>
                         </div>
                         <CardContent className="p-4">
                           <h3 className="font-semibold text-gray-900 mb-2">{collection.name}</h3>
-                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{collection.description}</p>
-                          <div className="flex items-center gap-1 text-sm text-gray-500">
-                            <Eye className="w-4 h-4" />
-                            {formatNumber(collection.totalViews)} visualizações
+                          <p className="text-sm text-gray-600 mb-3">{collection.description}</p>
+                          <div className="flex items-center justify-between text-sm text-gray-500">
+                            <span>Criada em {collection.createdAt}</span>
+                            <span>{collection.visibility}</span>
                           </div>
                         </CardContent>
                       </Card>
@@ -1887,9 +1882,9 @@ export default function ProfilePage() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-96 text-gray-500">
-                    <Grid3X3 className="w-16 h-16 mb-4 text-gray-300" />
+                    <Star className="w-16 h-16 mb-4 text-gray-300" />
                     <h3 className="text-lg font-medium mb-2">Nenhuma coleção ainda</h3>
-                    <p className="text-sm text-center">Organize seus vídeos em coleções para facilitar a navegação.</p>
+                    <p className="text-sm text-center">Organize seus posts favoritos em coleções personalizadas.</p>
                   </div>
                 )}
               </div>
@@ -1898,955 +1893,46 @@ export default function ProfilePage() {
             {/* Achievements Tab */}
             <TabsContent value="achievements">
               <div className="min-h-[400px]">
-                <div className="flex flex-col items-center justify-center h-96 text-gray-500">
-                  <Trophy className="w-16 h-16 mb-4 text-gray-300" />
-                  <h3 className="text-lg font-medium mb-2">Em breve</h3>
-                  <p className="text-sm text-center">Sistema de conquistas chegando em breve!</p>
-                </div>
+                {achievements.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {achievements.map((achievement) => (
+                      <Card
+                        key={achievement.id}
+                        className={`overflow-hidden transition-all duration-300 ${getRarityColor(achievement.rarity)} ${getRarityGlow(achievement.rarity)} shadow-lg`}
+                      >
+                        <CardContent className="p-6 text-center">
+                          <div className="mb-4">
+                            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-3">
+                              <Trophy className="w-8 h-8 text-white" />
+                            </div>
+                            <h3 className="font-bold text-gray-900 mb-2">{achievement.name}</h3>
+                            <p className="text-sm text-gray-600 mb-3">{achievement.description}</p>
+                            <Badge className={`${getCategoryColor(achievement.rarity)} capitalize`}>
+                              {achievement.rarity}
+                            </Badge>
+                          </div>
+                          <div className="text-xs text-gray-500">Conquistada em {achievement.unlockedAt}</div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-96 text-gray-500">
+                    <Trophy className="w-16 h-16 mb-4 text-gray-300" />
+                    <h3 className="text-lg font-medium mb-2">Nenhuma conquista ainda</h3>
+                    <p className="text-sm text-center">
+                      Continue criando conteúdo para desbloquear conquistas incríveis!
+                    </p>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>
         </div>
-
-        {/* Create Post Modal */}
-        {showCreatePostModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-gray-900">Criar Post</h2>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowCreatePostModal(false)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <X className="w-5 h-5" />
-                  </Button>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="flex gap-4">
-                    <Avatar className="w-12 h-12 flex-shrink-0 ring-2 ring-blue-100">
-                      <AvatarImage src={avatarImage || "/placeholder.svg"} />
-                      <AvatarFallback>VC</AvatarFallback>
-                    </Avatar>
-
-                    <div className="flex-1 space-y-4">
-                      <Textarea
-                        placeholder="Compartilhe algo interessante..."
-                        value={newPostContent}
-                        onChange={(e) => setNewPostContent(e.target.value)}
-                        className="min-h-[120px] max-h-[200px] resize-none border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-xl"
-                      />
-
-                      {showYoutubeInput && (
-                        <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-2xl p-4 space-y-3 border border-red-100">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-semibold text-red-700 flex items-center gap-2">
-                              <Youtube className="w-4 h-4" />
-                              Link do YouTube
-                            </h4>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setShowYoutubeInput(false)
-                                setNewPostYoutubeUrl("")
-                                if (newPostMediaType === "youtube") {
-                                  setNewPostMediaType(null)
-                                  setNewPostMedia(null)
-                                  setVideoDuration(null)
-                                }
-                              }}
-                              className="text-gray-500 hover:text-gray-700 hover:bg-white/50 rounded-full"
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </div>
-                          <Input
-                            type="url"
-                            placeholder="https://www.youtube.com/watch?v=..."
-                            value={newPostYoutubeUrl}
-                            onChange={(e) => handleYouTubeUrlChange(e.target.value)}
-                            className="border-red-200 focus:border-red-500 focus:ring-red-500 rounded-xl"
-                          />
-                          {newPostYoutubeUrl && !extractYouTubeId(newPostYoutubeUrl) && (
-                            <p className="text-xs text-red-600">Por favor, insira um link válido do YouTube</p>
-                          )}
-                        </div>
-                      )}
-
-                      {newPostMedia && newPostMediaType !== "youtube" && (
-                        <div className="bg-gray-50 rounded-2xl p-4 flex items-center gap-3">
-                          <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <ImageIcon className="w-6 h-6 text-blue-600" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900">
-                              {newPostMediaType === "image" ? "Imagem anexada" : "Vídeo anexado"}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {videoDuration ? `Duração: ${videoDuration}` : "Clique em publicar para compartilhar"}
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-gray-500 hover:text-gray-700 rounded-full"
-                            onClick={() => {
-                              setNewPostMedia(null)
-                              setNewPostMediaType(null)
-                              setVideoDuration(null)
-                            }}
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      )}
-
-                      {newPostMediaType === "youtube" && newPostYoutubeUrl && extractYouTubeId(newPostYoutubeUrl) && (
-                        <div className="bg-gray-50 rounded-2xl p-4 flex items-center gap-3">
-                          <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                            <Youtube className="w-6 h-6 text-red-600" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900">Vídeo do YouTube anexado</p>
-                            <p className="text-xs text-gray-500">Clique em publicar para compartilhar</p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-gray-500 hover:text-gray-700 rounded-full"
-                            onClick={() => {
-                              setNewPostMedia(null)
-                              setNewPostMediaType(null)
-                              setNewPostYoutubeUrl("")
-                              setVideoDuration(null)
-                            }}
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => postMediaInputRef.current?.click()}
-                            className="text-blue-600 hover:bg-blue-50 rounded-full p-3 transition-all duration-200 hover:scale-105"
-                          >
-                            <ImageIcon className="w-5 h-5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setShowYoutubeInput(!showYoutubeInput)}
-                            className="text-red-600 hover:bg-red-50 rounded-full p-3 transition-all duration-200 hover:scale-105"
-                          >
-                            <Youtube className="w-5 h-5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-yellow-600 hover:bg-yellow-50 rounded-full p-3 transition-all duration-200 hover:scale-105"
-                          >
-                            <Smile className="w-5 h-5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-purple-600 hover:bg-purple-50 rounded-full p-3 transition-all duration-200 hover:scale-105"
-                          >
-                            <LocationIcon className="w-5 h-5" />
-                          </Button>
-
-                          <select
-                            value={newPostCategory}
-                            onChange={(e) => setNewPostCategory(e.target.value)}
-                            className="ml-3 px-4 py-2 border border-gray-200 rounded-full text-sm focus:border-blue-500 focus:ring-blue-500 bg-white shadow-sm hover:shadow-md transition-all duration-200"
-                          >
-                            {categories.map((category) => (
-                              <option key={category} value={category}>
-                                {category}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                            {newPostContent.length}/500
-                          </span>
-                          <Button
-                            onClick={handleCreatePost}
-                            disabled={!newPostContent.trim()}
-                            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-full px-8 py-2 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Publicar
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* YouTube Modal */}
-        {showYouTubeModal && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl overflow-hidden max-w-7xl w-full max-h-[90vh] flex">
-              {/* Video Section */}
-              <div className="flex-1 flex flex-col">
-                <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <Youtube className="w-5 h-5 text-red-600" />
-                    Reproduzindo vídeo
-                  </h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={closeYouTubeModal}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <X className="w-5 h-5" />
-                  </Button>
-                </div>
-                <div className="aspect-video">
-                  <iframe
-                    src={getYouTubeEmbedUrl(currentYouTubeUrl) || ""}
-                    className="w-full h-full"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              </div>
-
-              {/* Sidebar - Video Info + Comments */}
-              <div className="w-96 border-l border-gray-200 flex flex-col bg-gray-50">
-                {/* Video Info */}
-                {currentVideoData && (
-                  <div className="bg-white border-b border-gray-100 p-4">
-                    <div className="flex items-center gap-3 mb-3">
-                      <Avatar className="w-10 h-10">
-                        <AvatarImage src={currentVideoData.author?.avatar || avatarImage || "/placeholder.svg"} />
-                        <AvatarFallback>{currentVideoData.author?.name?.[0] || "U"}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-gray-900 text-sm">
-                            {currentVideoData.author?.name || userProfile.name}
-                          </span>
-                          {currentVideoData.author?.verified && <Verified className="w-4 h-4 text-blue-500" />}
-                        </div>
-                        <p className="text-xs text-gray-600">{currentVideoData.timestamp}</p>
-                      </div>
-                    </div>
-
-                    <p className="text-gray-700 text-sm mb-3 leading-relaxed">{currentVideoData.content}</p>
-
-                    <div className="flex items-center gap-4 text-sm">
-                      <button className="flex items-center gap-1 text-gray-600 hover:text-green-600 transition-colors">
-                        <ThumbsUp className="w-4 h-4" />
-                        <span>{formatNumber(currentVideoData.stats.likes)}</span>
-                      </button>
-                      <button className="flex items-center gap-1 text-gray-600 hover:text-red-600 transition-colors">
-                        <ThumbsDown className="w-4 h-4" />
-                      </button>
-                      <button className="flex items-center gap-1 text-gray-600 hover:text-blue-600 transition-colors">
-                        <Share className="w-4 h-4" />
-                        <span className="text-xs">Compartilhar</span>
-                      </button>
-                      <div className="flex items-center gap-1 text-gray-600">
-                        <Eye className="w-4 h-4" />
-                        <span className="text-xs">{formatNumber(currentVideoData.stats.views || 0)}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Comments Header */}
-                <div className="p-4 border-b border-gray-100 bg-white">
-                  <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                    <MessageCircle className="w-5 h-5 text-gray-600" />
-                    Comentários
-                  </h4>
-                </div>
-
-                {/* Comments */}
-                <div className="flex-1 overflow-y-auto">
-                  <div className="space-y-4 p-4">
-                    {videoComments.map((comment) => (
-                      <div key={comment.id} className="flex gap-3">
-                        <Avatar className="w-8 h-8 flex-shrink-0">
-                          <AvatarImage src={comment.avatar || "/placeholder.svg"} />
-                          <AvatarFallback>{comment.user[0]}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-gray-900 text-sm">{comment.user}</span>
-                            <span className="text-gray-500 text-xs">{comment.timestamp}</span>
-                          </div>
-                          <p className="text-gray-700 text-sm leading-relaxed mb-2">{comment.comment}</p>
-                          <div className="flex items-center gap-4">
-                            <button className="flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors">
-                              <Heart className="w-3 h-3" />
-                              <span className="text-xs">{comment.likes}</span>
-                            </button>
-                            <button className="text-gray-500 hover:text-blue-500 transition-colors text-xs">
-                              Responder
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Comment Input Area */}
-                <div className="p-4 border-t border-gray-100 bg-white">
-                  <div className="flex gap-3">
-                    <Avatar className="w-8 h-8 flex-shrink-0">
-                      <AvatarImage src={avatarImage || "/placeholder.svg"} />
-                      <AvatarFallback></AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <Textarea
-                        placeholder="Adicione um comentário..."
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        className="min-h-[60px] resize-none text-sm border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                      />
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="text-xs text-gray-500">{newComment.length}/500</span>
-                        <Button
-                          size="sm"
-                          onClick={handleAddComment}
-                          disabled={!newComment.trim()}
-                          className="bg-blue-600 hover:bg-blue-700"
-                        >
-                          Comentar
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Edit Profile Modal - Improved with Sidebar */}
-        {showEditProfileModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex">
-              {/* Sidebar */}
-              <div className="w-64 bg-gray-50 border-r border-gray-200 p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">Configurações</h2>
-                <nav className="space-y-2">
-                  <button
-                    onClick={() => setEditProfileSection("profile")}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                      editProfileSection === "profile"
-                        ? "bg-blue-100 text-blue-700 border border-blue-200"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    <User className="w-5 h-5" />
-                    <span className="font-medium">Perfil</span>
-                  </button>
-                  <button
-                    onClick={() => setEditProfileSection("appearance")}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                      editProfileSection === "appearance"
-                        ? "bg-blue-100 text-blue-700 border border-blue-200"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    <Paintbrush className="w-5 h-5" />
-                    <span className="font-medium">Aparência</span>
-                  </button>
-                  <button
-                    onClick={() => setEditProfileSection("connectivity")}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                      editProfileSection === "connectivity"
-                        ? "bg-blue-100 text-blue-700 border border-blue-200"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    <Wifi className="w-5 h-5" />
-                    <span className="font-medium">Conectividade</span>
-                  </button>
-                  <button
-                    onClick={() => setEditProfileSection("privacy")}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                      editProfileSection === "privacy"
-                        ? "bg-blue-100 text-blue-700 border border-blue-200"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    <Shield className="w-5 h-5" />
-                    <span className="font-medium">Privacidade</span>
-                  </button>
-                </nav>
-              </div>
-
-              {/* Main Content */}
-              <div className="flex-1 overflow-y-auto">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {editProfileSection === "profile" && "Informações do Perfil"}
-                        {editProfileSection === "appearance" && "Aparência e Tema"}
-                        {editProfileSection === "connectivity" && "Contas Conectadas"}
-                        {editProfileSection === "privacy" && "Privacidade e Segurança"}
-                      </h3>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {editProfileSection === "profile" && "Gerencie suas informações pessoais e biografia"}
-                        {editProfileSection === "appearance" && "Personalize a aparência do seu perfil"}
-                        {editProfileSection === "connectivity" && "Conecte suas contas de redes sociais e streaming"}
-                        {editProfileSection === "privacy" && "Configure suas preferências de privacidade"}
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setShowEditProfileModal(false)
-                        setEditProfileSection("profile")
-                        setTempCoverImage(coverImage)
-                        setTempAvatarImage(avatarImage)
-                        setEditingName(userProfile.name)
-                        setEditingBio(userProfile.bio)
-                        setEditingLocation(userProfile.location)
-                        setEditingWebsite(userProfile.website)
-                        setUseBlurredAvatar(false)
-                        setBlurAmount(10)
-                      }}
-                    >
-                      <X className="w-5 h-5" />
-                    </Button>
-                  </div>
-
-                  {/* Profile Section */}
-                  {editProfileSection === "profile" && (
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Nome</label>
-                          <Input
-                            value={editingName}
-                            onChange={(e) => setEditingName(e.target.value)}
-                            placeholder="Seu nome"
-                            className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Localização</label>
-                          <Input
-                            value={editingLocation}
-                            onChange={(e) => setEditingLocation(e.target.value)}
-                            placeholder="Sua localização"
-                            className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
-                        <Input
-                          value={editingWebsite}
-                          onChange={(e) => setEditingWebsite(e.target.value)}
-                          placeholder="Seu website"
-                          className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Biografia</label>
-                        <Textarea
-                          value={editingBio}
-                          onChange={(e) => setEditingBio(e.target.value)}
-                          placeholder="Conte um pouco sobre você..."
-                          className="min-h-[120px] border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                          maxLength={300}
-                        />
-                        <div className="text-right text-xs text-gray-500 mt-1">{editingBio.length}/300</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Appearance Section */}
-                  {editProfileSection === "appearance" && (
-                    <div className="space-y-6">
-                      {/* Avatar Section */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-3">Foto de Perfil</label>
-                        <div className="flex items-center gap-4">
-                          <div className="w-20 h-20 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-1">
-                            <Avatar className="w-full h-full border-2 border-white">
-                              <AvatarImage src={tempAvatarImage || "/placeholder.svg"} />
-                              <AvatarFallback className="text-lg"></AvatarFallback>
-                            </Avatar>
-                          </div>
-                          <Button
-                            variant="outline"
-                            onClick={() => tempAvatarInputRef.current?.click()}
-                            className="flex items-center gap-2"
-                          >
-                            <Edit className="w-4 h-4" />
-                            Alterar foto
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Cover Image Section */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-3">Imagem de Capa</label>
-
-                        {/* Checkbox para usar avatar com desfoque */}
-                        <div className="mb-4">
-                          <label className="flex items-center gap-3 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={useBlurredAvatar}
-                              onChange={(e) => setUseBlurredAvatar(e.target.checked)}
-                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                            />
-                            <span className="text-sm text-gray-700">Usar foto de perfil como capa com desfoque</span>
-                          </label>
-                        </div>
-
-                        {useBlurredAvatar ? (
-                          // Seção de desfoque
-                          <div className="space-y-4">
-                            <div className="relative h-32 rounded-xl overflow-hidden">
-                              <img
-                                src={tempAvatarImage || "/placeholder.svg"}
-                                alt="Cover preview with blur"
-                                className="w-full h-full object-cover"
-                                style={{ filter: `blur(${blurAmount}px)` }}
-                              />
-                              <div className="absolute inset-0 bg-black/20"></div>
-                              <div className="absolute bottom-2 right-2 bg-white/90 text-gray-900 text-xs px-2 py-1 rounded">
-                                Desfoque: {blurAmount}px
-                              </div>
-                            </div>
-
-                            {/* Controle de desfoque */}
-                            <div className="space-y-2">
-                              <label className="block text-sm font-medium text-gray-700">
-                                Intensidade do desfoque: {blurAmount}px
-                              </label>
-                              <input
-                                type="range"
-                                min="0"
-                                max="30"
-                                value={blurAmount}
-                                onChange={(e) => setBlurAmount(Number(e.target.value))}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                                style={{
-                                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(blurAmount / 30) * 100}%, #e5e7eb ${(blurAmount / 30) * 100}%, #e5e7eb 100%)`,
-                                }}
-                              />
-                              <div className="flex justify-between text-xs text-gray-500">
-                                <span>Sem desfoque</span>
-                                <span>Máximo desfoque</span>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          // Seção de upload normal
-                          <div className="relative h-32 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl overflow-hidden">
-                            <img
-                              src={tempCoverImage || "/placeholder.svg"}
-                              alt="Cover preview"
-                              className="w-full h-full object-cover"
-                            />
-                            <div className="absolute inset-0 bg-black/20"></div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="absolute bottom-2 right-2 bg-white/90 hover:bg-white text-gray-900"
-                              onClick={() => tempCoverInputRef.current?.click()}
-                            >
-                              <Edit className="w-4 h-4 mr-2" />
-                              Alterar
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Connectivity Section */}
-                  {editProfileSection === "connectivity" && (
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {socialPlatforms.map((platform) => (
-                          <Card key={platform.name} className="p-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div
-                                  className={`w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center ${platform.color}`}
-                                >
-                                  <platform.icon className="w-5 h-5" />
-                                </div>
-                                <div>
-                                  <h4 className="font-medium text-gray-900">{platform.name}</h4>
-                                  <p className="text-sm text-gray-500">
-                                    {platform.connected ? "Conectado" : "Não conectado"}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {platform.connected && <div className="w-2 h-2 bg-green-500 rounded-full"></div>}
-                                <Button
-                                  variant={platform.connected ? "outline" : "default"}
-                                  size="sm"
-                                  onClick={platform.onToggle}
-                                  className={platform.connected ? "text-red-600 hover:bg-red-50" : ""}
-                                >
-                                  {platform.connected ? (
-                                    <>
-                                      <X className="w-4 h-4 mr-1" />
-                                      Desconectar
-                                    </>
-                                  ) : (
-                                    <>
-                                      <ExternalLink className="w-4 h-4 mr-1" />
-                                      Conectar
-                                    </>
-                                  )}
-                                </Button>
-                              </div>
-                            </div>
-                          </Card>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Privacy Section */}
-                  {editProfileSection === "privacy" && (
-                    <div className="space-y-6">
-                      <Card className="p-4">
-                        <h4 className="font-medium text-gray-900 mb-3">Visibilidade do Perfil</h4>
-                        <div className="space-y-3">
-                          <label className="flex items-center gap-3 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              defaultChecked
-                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <span className="text-sm text-gray-700">Perfil público</span>
-                          </label>
-                          <label className="flex items-center gap-3 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              defaultChecked
-                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <span className="text-sm text-gray-700">Mostrar estatísticas</span>
-                          </label>
-                          <label className="flex items-center gap-3 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <span className="text-sm text-gray-700">Ocultar lista de seguidores</span>
-                          </label>
-                        </div>
-                      </Card>
-
-                      <Card className="p-4">
-                        <h4 className="font-medium text-gray-900 mb-3">Notificações</h4>
-                        <div className="space-y-3">
-                          <label className="flex items-center gap-3 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              defaultChecked
-                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <span className="text-sm text-gray-700">Novos seguidores</span>
-                          </label>
-                          <label className="flex items-center gap-3 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              defaultChecked
-                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <span className="text-sm text-gray-700">Curtidas em posts</span>
-                          </label>
-                          <label className="flex items-center gap-3 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <span className="text-sm text-gray-700">Comentários</span>
-                          </label>
-                        </div>
-                      </Card>
-                    </div>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className="flex justify-end gap-3 pt-6 border-t border-gray-100 mt-8">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setShowEditProfileModal(false)
-                        setEditProfileSection("profile")
-                        setTempCoverImage(coverImage)
-                        setTempAvatarImage(avatarImage)
-                        setEditingName(userProfile.name)
-                        setEditingBio(userProfile.bio)
-                        setEditingLocation(userProfile.location)
-                        setEditingWebsite(userProfile.website)
-                        setUseBlurredAvatar(false)
-                        setBlurAmount(10)
-                      }}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button onClick={handleEditProfileSave} className="bg-blue-600 hover:bg-blue-700">
-                      Salvar alterações
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Avatar Modal */}
-        {showAvatarModal && (
-          <div
-            className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
-            onClick={() => setShowAvatarModal(false)}
-          >
-            <div className="relative max-w-md max-h-[80vh]">
-              <img
-                src={avatarImage || "/placeholder.svg"}
-                alt="Profile"
-                className="max-w-full max-h-full object-contain rounded-full shadow-2xl"
-                onClick={(e) => e.stopPropagation()}
-              />
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Rodapé */}
-      <footer className="bg-gray-900 text-white mt-16 w-full">
-        <div className="max-w-full mx-auto px-6 py-12">
-          <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">B</span>
-                  </div>
-                  <span className="text-xl font-bold">BILIBILI</span>
-                </div>
-                <p className="text-gray-400 text-sm leading-relaxed">A plataforma do corono.</p>
-                <div className="flex gap-4">
-                  <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white p-2">
-                    <Youtube className="w-5 h-5" />
-                  </Button>
-                  <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white p-2">
-                    <MessageCircle className="w-5 h-5" />
-                  </Button>
-                  <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white p-2">
-                    <Share className="w-5 h-5" />
-                  </Button>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-4">Explorar</h3>
-                <ul className="space-y-2 text-sm text-gray-400">
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Trending
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Anime
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Tecnologia
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Jogos
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Música
-                    </a>
-                  </li>
-                </ul>
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-4">Comunidade</h3>
-                <ul className="space-y-2 text-sm text-gray-400">
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Diretrizes
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Suporte
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Feedback
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Desenvolvedores
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Blog
-                    </a>
-                  </li>
-                </ul>
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-4">Legal</h3>
-                <ul className="space-y-2 text-sm text-gray-400">
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Termos de Uso
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Política de Privacidade
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Direitos Autorais
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" className="hover:text-white transition-colors">
-                      Cookies
-                    </a>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-800 mt-8 pt-8">
-              <p className="text-gray-400 text-sm text-center">© 2024 Bilibili. Todos os direitos reservados.</p>
-            </div>
-          </div>
-        </div>
-      </footer>
       {/* Canvas oculto para análise de cores */}
       <canvas ref={colorAnalysisCanvasRef} className="hidden" />
-
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes slideInLeft {
-          from {
-            opacity: 0;
-            transform: translateX(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        @keyframes slideInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.5s ease-out;
-        }
-
-        .animate-slideInLeft {
-          animation: slideInLeft 0.4s ease-out;
-        }
-
-        .animate-slideInUp {
-          animation: slideInUp 0.4s ease-out;
-        }
-
-        .animation-delay-100 {
-          animation-delay: 0.1s;
-        }
-
-        .animation-delay-200 {
-          animation-delay: 0.2s;
-        }
-
-        .animation-delay-300 {
-          animation-delay: 0.3s;
-        }
-
-        /* Slider personalizado */
-        .slider::-webkit-slider-thumb {
-          appearance: none;
-          height: 16px;
-          width: 16px;
-          border-radius: 50%;
-          background: #3b82f6;
-          cursor: pointer;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .slider::-moz-range-thumb {
-          height: 16px;
-          width: 16px;
-          border-radius: 50%;
-          background: #3b82f6;
-          cursor: pointer;
-          border: none;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-      `}</style>
     </div>
   )
 }
