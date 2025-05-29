@@ -154,8 +154,7 @@ export default function ProfilePage() {
   const [editingWebsite, setEditingWebsite] = useState("")
   const [tempCoverImage, setTempCoverImage] = useState("")
   const [tempAvatarImage, setTempAvatarImage] = useState("")
-  const [useBlurredAvatar, setUseBlurredAvatar] = useState(false)
-  const [blurAmount, setBlurAmount] = useState(10)
+  const [showRemoveCoverModal, setShowRemoveCoverModal] = useState(false)
 
   // Estados do Spotify
   const [spotifyToken, setSpotifyToken] = useState<string | null>(null)
@@ -816,27 +815,7 @@ export default function ProfilePage() {
       website: editingWebsite,
     }))
 
-    if (useBlurredAvatar) {
-      const canvas = document.createElement("canvas")
-      const ctx = canvas.getContext("2d")
-      const img = new Image()
-
-      img.onload = () => {
-        canvas.width = img.width
-        canvas.height = img.height
-
-        ctx!.filter = `blur(${blurAmount}px)`
-        ctx!.drawImage(img, 0, 0)
-
-        const blurredDataUrl = canvas.toDataURL()
-        setCoverImage(blurredDataUrl)
-      }
-
-      img.src = tempAvatarImage
-    } else {
-      setCoverImage(tempCoverImage)
-    }
-
+    setCoverImage(tempCoverImage)
     setAvatarImage(tempAvatarImage)
     setShowEditProfileModal(false)
   }
@@ -2247,11 +2226,7 @@ export default function ProfilePage() {
                             variant="destructive"
                             size="sm"
                             className="bg-red-600/90 hover:bg-red-700/90 text-white"
-                            onClick={() => {
-                              if (window.confirm("Tem certeza que deseja remover a imagem de capa?")) {
-                                setTempCoverImage("/placeholder.svg?height=192&width=768")
-                              }
-                            }}
+                            onClick={() => setShowRemoveCoverModal(true)}
                           >
                             <X className="w-4 h-4 mr-2" />
                             Remover
@@ -2273,31 +2248,6 @@ export default function ProfilePage() {
                         Alterar
                       </Button>
                     </div>
-                  </div>
-
-                  <div className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <label className="text-sm font-medium text-gray-700">Usar avatar como capa (com blur)</label>
-                      <input
-                        type="checkbox"
-                        checked={useBlurredAvatar}
-                        onChange={(e) => setUseBlurredAvatar(e.target.checked)}
-                        className="rounded text-blue-600 focus:ring-blue-500"
-                      />
-                    </div>
-                    {useBlurredAvatar && (
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-2">Intensidade do blur</label>
-                        <input
-                          type="range"
-                          min="1"
-                          max="20"
-                          value={blurAmount}
-                          onChange={(e) => setBlurAmount(Number.parseInt(e.target.value))}
-                          className="w-full"
-                        />
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
@@ -2504,6 +2454,38 @@ export default function ProfilePage() {
                 </Button>
                 <Button variant="destructive" onClick={() => setAvatarImage("/placeholder.svg?height=128&width=128")}>
                   <X className="w-4 h-4 mr-2" />
+                  Remover
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Cover Confirmation Modal */}
+      {showRemoveCoverModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                <X className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Remover imagem de capa</h3>
+              <p className="text-gray-600 mb-6">
+                Tem certeza que deseja remover a imagem de capa? Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <Button variant="outline" onClick={() => setShowRemoveCoverModal(false)} className="px-6">
+                  Cancelar
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setTempCoverImage("/placeholder.svg?height=192&width=768")
+                    setShowRemoveCoverModal(false)
+                  }}
+                  className="px-6"
+                >
                   Remover
                 </Button>
               </div>
