@@ -168,6 +168,7 @@ export default function ProfilePage() {
   const [showRemoveCoverModal, setShowRemoveCoverModal] = useState(false)
   // Adicione este estado após os outros estados de edição de perfil
   const [tempCoverRemoved, setTempCoverRemoved] = useState(false)
+  const [showRemoveCoverConfirmModal, setShowRemoveCoverConfirmModal] = useState(false)
 
   // Estados do Spotify
   const [spotifyToken, setSpotifyToken] = useState<string | null>(null)
@@ -832,9 +833,15 @@ export default function ProfilePage() {
       website: editingWebsite,
     }))
 
-    setCoverImage(tempCoverImage)
+    // Se a capa foi removida, aplicar a remoção
+    if (tempCoverRemoved) {
+      setCoverImage("/placeholder.svg?height=192&width=768")
+    } else {
+      setCoverImage(tempCoverImage)
+    }
+
     setAvatarImage(tempAvatarImage)
-    setTempCoverRemoved(false) // Resetar o estado após salvar
+    setTempCoverRemoved(false)
     setShowEditProfileModal(false)
   }
 
@@ -2293,44 +2300,93 @@ export default function ProfilePage() {
                   className="w-full border rounded-lg p-3 min-h-[120px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="O que você está pensando?"
                   value={newPostContent}
-                  onChange={(e) => setNewPostContent(e.target.value)}
+                  onChange={(e) => {
+                    if (e.target.value.length <= 500) {
+                      setNewPostContent(e.target.value)
+                    }
+                  }}
+                  maxLength={500}
                 ></textarea>
+                <div className="text-right text-xs text-gray-500 mt-1">{newPostContent.length}/500 caracteres</div>
               </div>
 
+              {/* No modal de criar post, substitua a seção de preview de mídia por: */}
               {newPostMedia && (
-                <div className="relative">
-                  {newPostMediaType === "image" ? (
-                    <img
-                      src={newPostMedia || "/placeholder.svg"}
-                      alt="Post media"
-                      className="w-full rounded-lg max-h-[300px] object-cover"
-                    />
-                  ) : newPostMediaType === "video" ? (
-                    <video src={newPostMedia} controls className="w-full rounded-lg max-h-[300px] object-cover"></video>
-                  ) : newPostMediaType === "youtube" ? (
-                    <div className="relative">
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border">
+                  <div className="w-16 h-12 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
+                    {newPostMediaType === "image" ? (
+                      <img
+                        src={newPostMedia || "/placeholder.svg"}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : newPostMediaType === "video" ? (
+                      <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                        <Play className="w-4 h-4 text-white" />
+                      </div>
+                    ) : newPostMediaType === "youtube" ? (
                       <img
                         src={newPostMedia || "/placeholder.svg"}
                         alt="YouTube thumbnail"
-                        className="w-full rounded-lg max-h-[300px] object-cover"
+                        className="w-full h-full object-cover"
                       />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
-                          <Play className="w-8 h-8 text-white ml-1" />
-                        </div>
-                      </div>
+                    ) : null}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {newPostMediaType === "image" && "Imagem anexada"}
+                      {newPostMediaType === "video" && "Vídeo anexado"}
+                      {newPostMediaType === "youtube" &&
+                        (extractYouTubeId(newPostYoutubeUrl)
+                          ? `Vídeo: ${
+                              newPostYoutubeUrl.includes("v=")
+                                ? decodeURIComponent(newPostYoutubeUrl.split("v=")[1].split("&")[0])
+                                : "Vídeo do YouTube"
+                            }`
+                          : "Vídeo do YouTube anexado")}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <button
+                        onClick={() => {
+                          // Lógica para editar mídia
+                          if (newPostMediaType === "youtube") {
+                            setShowYoutubeInput(true)
+                          } else {
+                            postMediaInputRef.current?.click()
+                          }
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-800"
+                      >
+                        Editar
+                      </button>
+                      <span className="text-gray-300">•</span>
+                      <button
+                        onClick={() => {
+                          if (confirm("Tem certeza que deseja remover este anexo?")) {
+                            setNewPostMedia(null)
+                            setNewPostMediaType(null)
+                            setNewPostYoutubeUrl("")
+                            setVideoDuration(null)
+                          }
+                        }}
+                        className="text-xs text-red-600 hover:text-red-800"
+                      >
+                        Remover
+                      </button>
                     </div>
-                  ) : null}
+                  </div>
                   <Button
-                    variant="destructive"
+                    variant="ghost"
                     size="sm"
-                    className="absolute top-2 right-2"
                     onClick={() => {
-                      setNewPostMedia(null)
-                      setNewPostMediaType(null)
-                      setNewPostYoutubeUrl("")
-                      setVideoDuration(null)
+                      if (confirm("Tem certeza que deseja remover este anexo?")) {
+                        setNewPostMedia(null)
+                        setNewPostMediaType(null)
+                        setNewPostYoutubeUrl("")
+                        setVideoDuration(null)
+                      }
                     }}
+                    className="text-gray-400 hover:text-gray-600"
                   >
                     <X className="w-4 h-4" />
                   </Button>
@@ -2428,7 +2484,7 @@ export default function ProfilePage() {
                   className="relative h-32 rounded-xl overflow-hidden bg-gray-200"
                   style={{
                     background:
-                      tempCoverImage && tempCoverImage !== "/placeholder.svg?height=192&width=768"
+                      tempCoverImage && tempCoverImage !== "/placeholder.svg?height=192&width=768" && !tempCoverRemoved
                         ? "none"
                         : autoGradient || "linear-gradient(to-r, #3b82f6, #8b5cf6)",
                   }}
@@ -2441,13 +2497,23 @@ export default function ProfilePage() {
                     />
                   ) : null}
 
-                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center gap-2">
                     <button
                       onClick={() => tempCoverInputRef.current?.click()}
                       className="w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition-colors"
                     >
                       <Upload className="w-5 h-5 text-white" />
                     </button>
+                    {tempCoverImage &&
+                      tempCoverImage !== "/placeholder.svg?height=192&width=768" &&
+                      !tempCoverRemoved && (
+                        <button
+                          onClick={() => setShowRemoveCoverConfirmModal(true)}
+                          className="w-10 h-10 bg-red-500/70 hover:bg-red-600/80 rounded-full flex items-center justify-center transition-colors"
+                        >
+                          <X className="w-5 h-5 text-white" />
+                        </button>
+                      )}
                   </div>
                 </div>
 
@@ -2484,10 +2550,16 @@ export default function ProfilePage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
                   <textarea
                     value={editingBio}
-                    onChange={(e) => setEditingBio(e.target.value)}
+                    onChange={(e) => {
+                      if (e.target.value.length <= 120) {
+                        setEditingBio(e.target.value)
+                      }
+                    }}
                     className="w-full border border-gray-300 rounded-lg p-3 min-h-[80px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                     placeholder="Tell us about yourself"
+                    maxLength={120}
                   />
+                  <div className="text-right text-xs text-gray-500 mt-1">{editingBio.length}/120 caracteres</div>
                 </div>
 
                 <div>
@@ -2657,62 +2729,47 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* Remove Cover Modal */}
-      {showRemoveCoverModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold">Remover imagem de capa?</h3>
-              <Button variant="ghost" size="sm" onClick={() => setShowRemoveCoverModal(false)}>
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="p-4 space-y-4">
-              <p className="text-gray-700">
-                Tem certeza de que deseja remover sua imagem de capa? Ela será substituída por um gradiente.
-              </p>
-            </div>
-            <div className="p-4 border-t flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowRemoveCoverModal(false)}>
-                Cancelar
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  setTempCoverImage("/placeholder.svg?height=192&width=768")
-                  setTempCoverRemoved(true)
-                  setShowRemoveCoverModal(false)
-                }}
-              >
-                Remover
-              </Button>
+      {/* Avatar Modal */}
+      {showAvatarModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAvatarModal(false)}
+              className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+            <div className="w-[250px] h-[250px] rounded-full overflow-hidden">
+              <img src={avatarImage || "/placeholder.svg"} alt="Profile" className="w-full h-full object-cover" />
             </div>
           </div>
         </div>
       )}
-
-      {/* Avatar Modal */}
-      {showAvatarModal && (
+      {/* Remove Cover Confirmation Modal */}
+      {showRemoveCoverConfirmModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold">Alterar foto de perfil</h3>
-              <Button variant="ghost" size="sm" onClick={() => setShowAvatarModal(false)}>
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="p-4 space-y-4">
-              <p className="text-gray-700">Selecione uma nova foto de perfil.</p>
-              <Avatar className="w-24 h-24 border-4 border-white shadow-md mx-auto">
-                <AvatarImage src={avatarImage || "/placeholder.svg"} />
-                <AvatarFallback className="text-2xl"></AvatarFallback>
-              </Avatar>
-            </div>
-            <div className="p-4 border-t flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowAvatarModal(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={() => avatarInputRef.current?.click()}>Alterar</Button>
+          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Remover foto de capa</h3>
+              <p className="text-gray-600 mb-6">
+                Tem certeza que deseja remover a imagem de capa? Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <Button variant="outline" onClick={() => setShowRemoveCoverConfirmModal(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setTempCoverRemoved(true)
+                    setShowRemoveCoverConfirmModal(false)
+                  }}
+                >
+                  Remover
+                </Button>
+              </div>
             </div>
           </div>
         </div>
