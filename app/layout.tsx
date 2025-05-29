@@ -3,6 +3,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 
 export default function RootLayout({
+
   children,
 }: {
   children: React.ReactNode
@@ -19,5 +20,6 @@ export default function RootLayout({
 }
 
 export const metadata = {
-      generator: 'v0.dev'
+      title: 'Perfil',
+      
     };
