@@ -69,9 +69,12 @@ const marqueeStyles = `
   
   @keyframes marquee {
     0% {
+      transform: translateX(100%);
+    }
+    20% {
       transform: translateX(0%);
     }
-    25% {
+    80% {
       transform: translateX(0%);
     }
     100% {
