@@ -126,17 +126,17 @@ body {
   position: absolute;
   top: 0;
   height: 100%;
-  width: 15px;
+  width: 20px;
   z-index: 1;
   pointer-events: none;
 }
 
 .text-fade-container::after {
   right: 0;
-  background: linear-gradient(to right, transparent, var(--fade-color, rgba(0, 0, 0, 0.8)));
+  background: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.7));
 }
 
 .text-fade-container::before {
   left: 0;
-  background: linear-gradient(to left, transparent, var(--fade-color, rgba(0, 0, 0, 0.8)));
+  background: linear-gradient(to left, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.7));
 }
