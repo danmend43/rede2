@@ -2214,12 +2214,24 @@ export default function ProfilePage() {
                 <div className="space-y-6 py-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Imagem de capa</label>
-                    <div className="relative h-32 rounded-lg overflow-hidden bg-gray-100">
-                      <img
-                        src={tempCoverImage || coverImage || "/placeholder.svg"}
-                        alt="Cover"
-                        className="w-full h-full object-cover"
-                      />
+                    <div
+                      className="relative h-32 rounded-lg overflow-hidden bg-gray-100"
+                      style={{
+                        background:
+                          tempCoverImage && tempCoverImage !== "/placeholder.svg?height=192&width=768"
+                            ? "none"
+                            : autoGradient || "linear-gradient(to-r, #3b82f6, #8b5cf6)",
+                      }}
+                    >
+                      {tempCoverImage && tempCoverImage !== "/placeholder.svg?height=192&width=768" ? (
+                        <img
+                          src={tempCoverImage || "/placeholder.svg"}
+                          alt="Cover"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-black/20"></div>
+                      )}
                       <div className="absolute bottom-2 right-2 flex gap-2">
                         <Button
                           variant="outline"
@@ -2235,7 +2247,11 @@ export default function ProfilePage() {
                             variant="destructive"
                             size="sm"
                             className="bg-red-600/90 hover:bg-red-700/90 text-white"
-                            onClick={() => setTempCoverImage("/placeholder.svg?height=192&width=768")}
+                            onClick={() => {
+                              if (window.confirm("Tem certeza que deseja remover a imagem de capa?")) {
+                                setTempCoverImage("/placeholder.svg?height=192&width=768")
+                              }
+                            }}
                           >
                             <X className="w-4 h-4 mr-2" />
                             Remover
