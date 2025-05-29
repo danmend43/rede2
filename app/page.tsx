@@ -1357,17 +1357,7 @@ export default function ProfilePage() {
                             {isPlaying ? "Ouvindo" : "Pausado"} -
                           </span>
                           <div className="overflow-hidden flex-1 relative">
-                            <div
-                              key={currentSpotifyTrack.id} // Key para reiniciar animação
-                              className={`text-white text-sm font-medium inline-block ${
-                                currentSpotifyTrack.name.length > 20 ? "animate-spotify-marquee" : ""
-                              }`}
-                              style={{
-                                maxWidth: currentSpotifyTrack.name.length > 20 ? "none" : "100%",
-                              }}
-                            >
-                              {currentSpotifyTrack.name}
-                            </div>
+                            <div className="text-white text-sm font-medium truncate">{currentSpotifyTrack.name}</div>
                           </div>
                         </div>
                       </div>
@@ -1384,13 +1374,13 @@ export default function ProfilePage() {
                             <div className="absolute inset-0 bg-black/20 rounded-md"></div>
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-white truncate text-sm drop-shadow-sm animate-slideInLeft">
+                            <p className="font-medium text-white truncate text-sm drop-shadow-sm">
                               {currentSpotifyTrack.name}
                             </p>
-                            <p className="text-xs text-gray-100 truncate opacity-90 animate-slideInLeft animation-delay-100">
+                            <p className="text-xs text-gray-100 truncate opacity-90">
                               {currentSpotifyTrack.artists?.map((artist: any) => artist.name).join(", ")}
                             </p>
-                            <div className="flex items-center gap-1 mt-1 animate-slideInLeft animation-delay-200">
+                            <div className="flex items-center gap-1 mt-1">
                               <div
                                 className={`w-2 h-2 rounded-full ${isPlaying ? "bg-[#1DB954]" : "bg-orange-400"}`}
                               ></div>
@@ -1400,7 +1390,7 @@ export default function ProfilePage() {
                         </div>
 
                         {/* Barra de progresso */}
-                        <div className="space-y-1 animate-slideInUp animation-delay-300">
+                        <div className="space-y-1">
                           <div className="w-full bg-white/20 rounded-full h-1 overflow-hidden">
                             <div
                               className="bg-white h-1 rounded-full transition-all duration-100 ease-linear shadow-sm"

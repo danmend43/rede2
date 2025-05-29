@@ -93,34 +93,6 @@ body {
   }
 }
 
-@keyframes spotify-marquee {
-  0% {
-    transform: translateX(0);
-  }
-  20% {
-    transform: translateX(-100%);
-  }
-  20.01% {
-    transform: translateX(100%);
-  }
-  40% {
-    transform: translateX(100%);
-  }
-  60% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(0);
-  }
-}
-
-.animate-spotify-marquee {
-  display: inline-block;
-  white-space: nowrap;
-  animation: spotify-marquee 6s ease-in-out infinite;
-  animation-delay: 0.5s;
-}
-
 @keyframes marquee {
   0% {
     transform: translateX(0);
