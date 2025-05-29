@@ -76,7 +76,10 @@ export default function ProfilePage() {
   const [avatarImage, setAvatarImage] = useState("/placeholder.svg?height=128&width=128")
 
   // Estados dos modais
-  const [showCreatePostModal, setShowEditProfileModal, setShowAvatarModal, setShowYouTubeModal] = useState(false)
+  const [showCreatePostModal, setShowCreatePostModal] = useState(false)
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false)
+  const [showAvatarModal, setShowAvatarModal] = useState(false)
+  const [showYouTubeModal, setShowYouTubeModal] = useState(false)
 
   // Estados do post
   const [newPostContent, setNewPostContent] = useState("")
@@ -116,6 +119,7 @@ export default function ProfilePage() {
   const [localProgress, setLocalProgress] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [lastUpdateTime, setLastUpdateTime] = useState(0)
+  const [isSpotifyExpanded, setIsSpotifyExpanded] = useState(false)
 
   // Estado do mega menu
   const [megaMenuDescription, setMegaMenuDescription] = useState("Descubra mais conteúdo incrível na nossa plataforma")
@@ -552,7 +556,7 @@ export default function ProfilePage() {
       Música: "text-orange-600 bg-orange-50",
       Arte: "text-indigo-600 bg-indigo-50",
     }
-    return colors[category] || "text-gray-600 bg-gray-50"
+    return colors[category as keyof typeof colors] || "text-gray-600 bg-gray-50"
   }
 
   const getRarityColor = (rarity: string) => {
@@ -770,8 +774,8 @@ export default function ProfilePage() {
         canvas.width = img.width
         canvas.height = img.height
 
-        ctx.filter = `blur(${blurAmount}px)`
-        ctx.drawImage(img, 0, 0)
+        ctx!.filter = `blur(${blurAmount}px)`
+        ctx!.drawImage(img, 0, 0)
 
         const blurredDataUrl = canvas.toDataURL()
         setCoverImage(blurredDataUrl)
@@ -977,9 +981,6 @@ export default function ProfilePage() {
     const seconds = Math.floor((ms % 60000) / 1000)
     return `${minutes}:${seconds.toString().padStart(2, "0")}`
   }
-
-  // Adicionar novo estado para controlar expansão do Spotify
-  const [isSpotifyExpanded, setIsSpotifyExpanded] = useState(false)
 
   return (
     <div className="min-h-screen bg-white">
@@ -1371,7 +1372,7 @@ export default function ProfilePage() {
                               {currentSpotifyTrack.name}
                             </p>
                             <p className="text-xs text-gray-100 truncate opacity-90 animate-slideInLeft animation-delay-100">
-                              {currentSpotifyTrack.artists?.map((artist) => artist.name).join(", ")}
+                              {currentSpotifyTrack.artists?.map((artist: any) => artist.name).join(", ")}
                             </p>
                             <div className="flex items-center gap-1 mt-1 animate-slideInLeft animation-delay-200">
                               <div
@@ -1933,6 +1934,462 @@ export default function ProfilePage() {
 
       {/* Canvas oculto para análise de cores */}
       <canvas ref={colorAnalysisCanvasRef} className="hidden" />
+
+      {/* Modal de Criação de Post */}
+      {showCreatePostModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-xl overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">Criar novo post</h3>
+              <Button variant="ghost" size="sm" onClick={() => setShowCreatePostModal(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <textarea
+                  className="w-full border rounded-lg p-3 min-h-[120px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="O que você está pensando?"
+                  value={newPostContent}
+                  onChange={(e) => setNewPostContent(e.target.value)}
+                ></textarea>
+              </div>
+
+              {newPostMedia && (
+                <div className="relative">
+                  {newPostMediaType === "image" ? (
+                    <img
+                      src={newPostMedia || "/placeholder.svg"}
+                      alt="Post media"
+                      className="w-full rounded-lg max-h-[300px] object-cover"
+                    />
+                  ) : newPostMediaType === "video" ? (
+                    <video src={newPostMedia} controls className="w-full rounded-lg max-h-[300px] object-cover"></video>
+                  ) : newPostMediaType === "youtube" ? (
+                    <div className="relative">
+                      <img
+                        src={newPostMedia || "/placeholder.svg"}
+                        alt="YouTube thumbnail"
+                        className="w-full rounded-lg max-h-[300px] object-cover"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
+                          <Play className="w-8 h-8 text-white ml-1" />
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={() => {
+                      setNewPostMedia(null)
+                      setNewPostMediaType(null)
+                      setNewPostYoutubeUrl("")
+                      setVideoDuration(null)
+                    }}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+
+              {showYoutubeInput && !newPostMedia && (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Cole o link do YouTube aqui"
+                    value={newPostYoutubeUrl}
+                    onChange={(e) => handleYouTubeUrlChange(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setShowYoutubeInput(false)
+                      setNewPostYoutubeUrl("")
+                    }}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => postMediaInputRef.current?.click()}
+                    disabled={!!newPostMedia}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Mídia
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowYoutubeInput(true)}
+                    disabled={!!newPostMedia || showYoutubeInput}
+                  >
+                    <Youtube className="w-4 h-4 mr-2" />
+                    YouTube
+                  </Button>
+                </div>
+                <div>
+                  <select
+                    className="border rounded-lg px-3 py-2 text-sm"
+                    value={newPostCategory}
+                    onChange={(e) => setNewPostCategory(e.target.value)}
+                  >
+                    {categories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 border-t flex justify-end">
+              <Button onClick={handleCreatePost} disabled={!newPostContent.trim()}>
+                Publicar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Edição de Perfil */}
+      {showEditProfileModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">Editar perfil</h3>
+              <Button variant="ghost" size="sm" onClick={() => setShowEditProfileModal(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="p-4">
+              <div className="flex border-b">
+                <button
+                  className={`px-4 py-2 font-medium ${
+                    editProfileSection === "profile" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-600"
+                  }`}
+                  onClick={() => setEditProfileSection("profile")}
+                >
+                  Perfil
+                </button>
+                <button
+                  className={`px-4 py-2 font-medium ${
+                    editProfileSection === "appearance" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-600"
+                  }`}
+                  onClick={() => setEditProfileSection("appearance")}
+                >
+                  Aparência
+                </button>
+                <button
+                  className={`px-4 py-2 font-medium ${
+                    editProfileSection === "connections" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-600"
+                  }`}
+                  onClick={() => setEditProfileSection("connections")}
+                >
+                  Conexões
+                </button>
+              </div>
+
+              {editProfileSection === "profile" && (
+                <div className="space-y-4 py-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                    <Input
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      className="w-full"
+                      placeholder="Seu nome"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                    <textarea
+                      value={editingBio}
+                      onChange={(e) => setEditingBio(e.target.value)}
+                      className="w-full border rounded-lg p-3 min-h-[120px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Conte um pouco sobre você"
+                    ></textarea>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Localização</label>
+                    <Input
+                      value={editingLocation}
+                      onChange={(e) => setEditingLocation(e.target.value)}
+                      className="w-full"
+                      placeholder="Sua localização"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
+                    <Input
+                      value={editingWebsite}
+                      onChange={(e) => setEditingWebsite(e.target.value)}
+                      className="w-full"
+                      placeholder="Seu website"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {editProfileSection === "appearance" && (
+                <div className="space-y-6 py-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Imagem de capa</label>
+                    <div className="relative h-32 rounded-lg overflow-hidden bg-gray-100">
+                      <img
+                        src={tempCoverImage || "/placeholder.svg"}
+                        alt="Cover"
+                        className="w-full h-full object-cover"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="absolute bottom-2 right-2 bg-white/90"
+                        onClick={() => tempCoverInputRef.current?.click()}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Alterar
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Foto de perfil</label>
+                    <div className="flex items-center gap-4">
+                      <Avatar className="w-24 h-24 border-4 border-white shadow-md">
+                        <AvatarImage src={tempAvatarImage || "/placeholder.svg"} />
+                        <AvatarFallback className="text-2xl"></AvatarFallback>
+                      </Avatar>
+                      <Button variant="outline" size="sm" onClick={() => tempAvatarInputRef.current?.click()}>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Alterar
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="text-sm font-medium text-gray-700">Usar avatar como capa (com blur)</label>
+                      <input
+                        type="checkbox"
+                        checked={useBlurredAvatar}
+                        onChange={(e) => setUseBlurredAvatar(e.target.checked)}
+                        className="rounded text-blue-600 focus:ring-blue-500"
+                      />
+                    </div>
+                    {useBlurredAvatar && (
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-2">Intensidade do blur</label>
+                        <input
+                          type="range"
+                          min="1"
+                          max="20"
+                          value={blurAmount}
+                          onChange={(e) => setBlurAmount(Number.parseInt(e.target.value))}
+                          className="w-full"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {editProfileSection === "connections" && (
+                <div className="space-y-4 py-4">
+                  <p className="text-sm text-gray-600 mb-4">
+                    Conecte suas contas de redes sociais para compartilhar atividades e aumentar seu alcance.
+                  </p>
+
+                  {socialPlatforms.map((platform) => (
+                    <div
+                      key={platform.name}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-full bg-gray-100 ${platform.color}`}>
+                          <platform.icon className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium">{platform.name}</h4>
+                          <p className="text-xs text-gray-500">{platform.connected ? "Conectado" : "Não conectado"}</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant={platform.connected ? "destructive" : "outline"}
+                        size="sm"
+                        onClick={platform.onToggle}
+                      >
+                        {platform.connected ? "Desconectar" : "Conectar"}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowEditProfileModal(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleEditProfileSave}>Salvar</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de YouTube */}
+      {showYouTubeModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-4xl overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold truncate flex-1">{currentVideoData?.title || "Assistir vídeo"}</h3>
+              <Button variant="ghost" size="sm" onClick={closeYouTubeModal}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="aspect-video bg-black">
+              <iframe
+                src={getYouTubeEmbedUrl(currentYouTubeUrl)}
+                className="w-full h-full"
+                allowFullScreen
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              ></iframe>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <h2 className="text-xl font-bold">{currentVideoData?.title || "Título do vídeo"}</h2>
+                <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
+                  <span>{formatNumber(currentVideoData?.stats?.views || 0)} visualizações</span>
+                  <span>•</span>
+                  <span>{currentVideoData?.timestamp || "há 1 dia"}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 py-2 border-y">
+                <button className="flex items-center gap-2 text-gray-700 hover:text-red-600 transition-colors">
+                  <Heart className="w-5 h-5" />
+                  <span>{formatNumber(currentVideoData?.stats?.likes || 0)}</span>
+                </button>
+                <button className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors">
+                  <MessageCircle className="w-5 h-5" />
+                  <span>{formatNumber(currentVideoData?.stats?.comments || 0)}</span>
+                </button>
+                <button className="flex items-center gap-2 text-gray-700 hover:text-green-600 transition-colors">
+                  <Share className="w-5 h-5" />
+                  <span>{formatNumber(currentVideoData?.stats?.shares || 0)}</span>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Avatar className="w-10 h-10">
+                    <AvatarImage
+                      src={currentVideoData?.author?.avatar || avatarImage || "/placeholder.svg"}
+                      alt={currentVideoData?.author?.name || "Author"}
+                    />
+                    <AvatarFallback>{(currentVideoData?.author?.name || "A").charAt(0).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="flex items-center gap-1">
+                      <span className="font-medium">{currentVideoData?.author?.name || "Nome do autor"}</span>
+                      {currentVideoData?.author?.verified && <Verified className="w-4 h-4 text-blue-500" />}
+                    </div>
+                    <p className="text-sm text-gray-600">{currentVideoData?.author?.username || "@username"}</p>
+                  </div>
+                </div>
+
+                <p className="text-gray-800 whitespace-pre-line">{currentVideoData?.content || ""}</p>
+              </div>
+
+              <div className="space-y-4 pt-4 border-t">
+                <h3 className="font-medium">Comentários ({formatNumber(videoComments.length)})</h3>
+
+                <div className="flex gap-3">
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src={avatarImage || "/placeholder.svg"} />
+                    <AvatarFallback>{userProfile.name[0]}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Adicione um comentário..."
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      className="mb-2"
+                    />
+                    <div className="flex justify-end">
+                      <Button size="sm" onClick={handleAddComment} disabled={!newComment.trim()}>
+                        Comentar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4 max-h-[300px] overflow-y-auto">
+                  {videoComments.map((comment: any) => (
+                    <div key={comment.id} className="flex gap-3">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={comment.avatar || "/placeholder.svg"} />
+                        <AvatarFallback>{comment.user[0]}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{comment.user}</span>
+                          <span className="text-xs text-gray-500">{comment.timestamp}</span>
+                        </div>
+                        <p className="text-gray-800">{comment.comment}</p>
+                        <div className="flex items-center gap-3 mt-1 text-sm">
+                          <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700">
+                            <Heart className="w-3.5 h-3.5" />
+                            <span>{comment.likes}</span>
+                          </button>
+                          <button className="text-gray-500 hover:text-gray-700">Responder</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Avatar */}
+      {showAvatarModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">Foto de perfil</h3>
+              <Button variant="ghost" size="sm" onClick={() => setShowAvatarModal(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="p-6 flex flex-col items-center">
+              <Avatar className="w-48 h-48 border-4 border-white shadow-lg mb-6">
+                <AvatarImage src={avatarImage || "/placeholder.svg"} />
+                <AvatarFallback className="text-6xl"></AvatarFallback>
+              </Avatar>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => avatarInputRef.current?.click()}>
+                  <Upload className="w-4 h-4 mr-2" />
+                  Alterar
+                </Button>
+                <Button variant="destructive" onClick={() => setAvatarImage("/placeholder.svg?height=128&width=128")}>
+                  <X className="w-4 h-4 mr-2" />
+                  Remover
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
