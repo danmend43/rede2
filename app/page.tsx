@@ -1342,7 +1342,7 @@ export default function ProfilePage() {
               {isSpotifyConnected && currentSpotifyTrack && (
                 <Card
                   className={`relative overflow-hidden border border-gray-200 transition-all duration-500 ease-in-out ${
-                    isSpotifyExpanded ? "transform scale-100" : "hover:scale-105 hover:shadow-lg cursor-pointer"
+                    isSpotifyExpanded ? "transform scale-100" : "cursor-pointer"
                   }`}
                   onClick={() => {
                     if (!isSpotifyExpanded) {
