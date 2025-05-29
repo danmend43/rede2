@@ -991,6 +991,9 @@ export default function ProfilePage() {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`
   }
 
+  // Adicionar novo estado para controlar expansão do Spotify
+  const [isSpotifyExpanded, setIsSpotifyExpanded] = useState(false)
+
   return (
     <div className="min-h-screen bg-white">
       {/* Hidden file inputs */}
@@ -1297,59 +1300,99 @@ export default function ProfilePage() {
             <div className="lg:w-80 space-y-6" style={{ marginTop: "10px" }}>
               {/* Spotify Section - só mostra quando há música tocando */}
               {isSpotifyConnected && currentSpotifyTrack && (
-                <Card className="relative overflow-hidden border border-gray-200">
+                <Card
+                  className={`relative overflow-hidden border border-gray-200 transition-all duration-500 ease-in-out cursor-pointer ${
+                    isSpotifyExpanded ? "transform scale-100" : "hover:scale-105 hover:shadow-lg"
+                  }`}
+                  onClick={() => !isSpotifyExpanded && setIsSpotifyExpanded(true)}
+                >
                   <div
-                    className="absolute inset-0 z-0"
+                    className="absolute inset-0 z-0 transition-opacity duration-500"
                     style={{
                       background: spotifyGradient || "linear-gradient(135deg, #1DB954, #191414)",
-                      opacity: 0.85,
+                      opacity: isSpotifyExpanded ? 0.85 : 0.95,
                     }}
                   ></div>
 
                   {/* Ícone do Spotify no canto superior direito */}
                   <div className="absolute top-2 right-2 z-10">
-                    <div className="w-5 h-5 bg-[#1DB954] rounded-full flex items-center justify-center">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setIsSpotifyExpanded(false)
+                      }}
+                      className={`w-5 h-5 bg-[#1DB954] rounded-full flex items-center justify-center transition-all duration-300 ${
+                        isSpotifyExpanded ? "hover:scale-110 hover:bg-[#1ed760] shadow-lg" : "animate-pulse"
+                      }`}
+                    >
                       <SpotifyIcon className="w-3 h-3 text-white" />
-                    </div>
+                    </button>
                   </div>
 
-                  <CardContent className="p-3 relative z-10">
-                    <div className="flex items-center gap-3 mb-3">
-                      <img
-                        src={currentSpotifyTrack.album?.images?.[2]?.url || "/placeholder.svg"}
-                        alt="Album cover"
-                        className="w-12 h-12 rounded-md object-cover shadow-md"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-white truncate text-sm drop-shadow-sm">
-                          {currentSpotifyTrack.name}
-                        </p>
-                        <p className="text-xs text-gray-100 truncate opacity-90">
-                          {currentSpotifyTrack.artists?.map((artist) => artist.name).join(", ")}
-                        </p>
-                        <div className="flex items-center gap-1 mt-1">
-                          <div className="w-2 h-2 bg-[#1DB954] rounded-full animate-pulse"></div>
-                          <span className="text-xs text-gray-100">Tocando agora</span>
+                  <CardContent
+                    className={`relative z-10 transition-all duration-500 ease-in-out ${
+                      isSpotifyExpanded ? "p-3" : "p-2"
+                    }`}
+                  >
+                    {!isSpotifyExpanded ? (
+                      // Estado Mínimo
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-[#1DB954] rounded-full animate-pulse"></div>
+                        <span className="text-white text-sm font-medium truncate drop-shadow-sm">
+                          Ouvindo - {currentSpotifyTrack.name}
+                        </span>
+                      </div>
+                    ) : (
+                      // Estado Expandido
+                      <div className="animate-fadeIn">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="relative">
+                            <img
+                              src={currentSpotifyTrack.album?.images?.[2]?.url || "/placeholder.svg"}
+                              alt="Album cover"
+                              className="w-12 h-12 rounded-md object-cover shadow-md transform transition-transform duration-300 hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-black/20 rounded-md"></div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-white truncate text-sm drop-shadow-sm animate-slideInLeft">
+                              {currentSpotifyTrack.name}
+                            </p>
+                            <p className="text-xs text-gray-100 truncate opacity-90 animate-slideInLeft animation-delay-100">
+                              {currentSpotifyTrack.artists?.map((artist) => artist.name).join(", ")}
+                            </p>
+                            <div className="flex items-center gap-1 mt-1 animate-slideInLeft animation-delay-200">
+                              <div className="w-2 h-2 bg-[#1DB954] rounded-full animate-pulse"></div>
+                              <span className="text-xs text-gray-100">Tocando agora</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Barra de progresso */}
+                        <div className="space-y-1 animate-slideInUp animation-delay-300">
+                          <div className="w-full bg-white/20 rounded-full h-1 overflow-hidden">
+                            <div
+                              className="bg-white h-1 rounded-full transition-all duration-100 ease-linear shadow-sm"
+                              style={{
+                                width: trackDuration > 0 ? `${(localProgress / trackDuration) * 100}%` : "0%",
+                              }}
+                            ></div>
+                          </div>
+                          <div className="flex justify-between text-xs text-gray-100 opacity-90">
+                            <span>{formatTime(localProgress)}</span>
+                            <span>{formatTime(trackDuration)}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-
-                    {/* Barra de progresso */}
-                    <div className="space-y-1">
-                      <div className="w-full bg-white/20 rounded-full h-1">
-                        <div
-                          className="bg-white h-1 rounded-full transition-all duration-100 ease-linear"
-                          style={{
-                            width: trackDuration > 0 ? `${(localProgress / trackDuration) * 100}%` : "0%",
-                          }}
-                        ></div>
-                      </div>
-                      <div className="flex justify-between text-xs text-gray-100 opacity-90">
-                        <span>{formatTime(localProgress)}</span>
-                        <span>{formatTime(trackDuration)}</span>
-                      </div>
-                    </div>
+                    )}
                   </CardContent>
+
+                  {/* Indicador visual de que é clicável (apenas no estado mínimo) */}
+                  {!isSpotifyExpanded && (
+                    <div className="absolute bottom-1 right-1 z-10">
+                      <div className="w-1 h-1 bg-white/50 rounded-full animate-ping"></div>
+                    </div>
+                  )}
                 </Card>
               )}
             </div>
@@ -2709,6 +2752,86 @@ export default function ProfilePage() {
       </footer>
       {/* Canvas oculto para análise de cores */}
       <canvas ref={colorAnalysisCanvasRef} className="hidden" />
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes slideInLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes slideInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fadeIn {
+          animation: fadeIn 0.5s ease-out;
+        }
+
+        .animate-slideInLeft {
+          animation: slideInLeft 0.4s ease-out;
+        }
+
+        .animate-slideInUp {
+          animation: slideInUp 0.4s ease-out;
+        }
+
+        .animation-delay-100 {
+          animation-delay: 0.1s;
+        }
+
+        .animation-delay-200 {
+          animation-delay: 0.2s;
+        }
+
+        .animation-delay-300 {
+          animation-delay: 0.3s;
+        }
+
+        /* Slider personalizado */
+        .slider::-webkit-slider-thumb {
+          appearance: none;
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          background: #3b82f6;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .slider::-moz-range-thumb {
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          background: #3b82f6;
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+      `}</style>
     </div>
   )
 }
