@@ -1,23 +1,31 @@
-import { NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams
   const code = searchParams.get("code")
   const state = searchParams.get("state")
+  const error = searchParams.get("error")
 
-  // Verify state to prevent CSRF attacks
-  const storedState = typeof window !== "undefined" ? localStorage.getItem("spotify_auth_state") : null
+  // Se o usuário negou o acesso
+  if (error === "access_denied") {
+    return NextResponse.redirect(new URL("/?spotify_error=access_denied", request.url))
+  }
 
+  // Se não há código de autorização
   if (!code) {
-    // Redirect back to the profile page with an error
-    return NextResponse.redirect(`${new URL(request.url).origin}?spotify_error=no_code`)
+    return NextResponse.redirect(new URL("/?spotify_error=no_code", request.url))
   }
 
   try {
-    // Exchange the code for an access token
+    // Trocar código por token
     const clientId = "384115184ce848c1bf39bdd8d0209f83"
     const clientSecret = process.env.SPOTIFY_CLIENT_SECRET
-    const redirectUri = `${new URL(request.url).origin}/api/spotify/callback`
+    const redirectUri = `${request.nextUrl.origin}/api/spotify/callback`
+
+    if (!clientSecret) {
+      console.error("SPOTIFY_CLIENT_SECRET não configurado")
+      return NextResponse.redirect(new URL("/?spotify_error=server_error", request.url))
+    }
 
     const tokenResponse = await fetch("https://accounts.spotify.com/api/token", {
       method: "POST",
@@ -33,18 +41,22 @@ export async function GET(request: Request) {
     })
 
     if (!tokenResponse.ok) {
-      console.error("Token exchange failed:", await tokenResponse.text())
-      return NextResponse.redirect(`${new URL(request.url).origin}?spotify_error=token_exchange_failed`)
+      console.error("Erro ao trocar código por token:", tokenResponse.status)
+      return NextResponse.redirect(new URL("/?spotify_error=token_exchange_failed", request.url))
     }
 
     const tokenData = await tokenResponse.json()
 
-    // Redirect back to the profile page with the tokens as query parameters
-    return NextResponse.redirect(
-      `${new URL(request.url).origin}?access_token=${tokenData.access_token}&refresh_token=${tokenData.refresh_token}`,
-    )
+    // Redirecionar de volta para a página principal com o token
+    const redirectUrl = new URL("/", request.url)
+    redirectUrl.searchParams.set("access_token", tokenData.access_token)
+    if (tokenData.refresh_token) {
+      redirectUrl.searchParams.set("refresh_token", tokenData.refresh_token)
+    }
+
+    return NextResponse.redirect(redirectUrl)
   } catch (error) {
-    console.error("Error in Spotify callback:", error)
-    return NextResponse.redirect(`${new URL(request.url).origin}?spotify_error=server_error`)
+    console.error("Erro no callback do Spotify:", error)
+    return NextResponse.redirect(new URL("/?spotify_error=server_error", request.url))
   }
 }

@@ -107,18 +107,223 @@ const SpotifyIcon = ({ className }: { className?: string }) => (
   </svg>
 )
 
-// Interfaces e tipos
-interface DominantColor {
+// Nova lógica de extração de cores
+interface VibrantColor {
   r: number
   g: number
   b: number
-  count: number
+  saturation: number
+  brightness: number
+  population: number
+  hue: number
+  colorName: string
+}
+
+class SmartColorExtractor {
+  static extractVibrantColors(imageData: ImageData): VibrantColor[] {
+    const width = imageData.width
+    const height = imageData.height
+    const data = imageData.data
+
+    const colorStats = new Map<
+      string,
+      {
+        r: number
+        g: number
+        b: number
+        count: number
+        weight: number
+        isVibrant: boolean
+      }
+    >()
+
+    // Analisar pixel por pixel com amostragem mais eficiente
+    for (let y = 0; y < height; y += 2) {
+      for (let x = 0; x < width; x += 2) {
+        const i = (y * width + x) * 4
+        const r = data[i]
+        const g = data[i + 1]
+        const b = data[i + 2]
+        const alpha = data[i + 3]
+
+        if (alpha < 128) continue
+
+        // Peso baseado na posição (centro e topo têm mais peso)
+        const centerWeight = this.getCenterWeight(x, y, width, height)
+        const topWeight = y < height * 0.3 ? 2 : 1
+
+        const hsv = this.rgbToHsv(r, g, b)
+
+        // Filtros mais precisos para cores vibrantes
+        if (hsv.v < 0.2 || hsv.v > 0.95) continue
+        if (hsv.s < 0.3) continue
+
+        const isVibrant = this.isVibrantColor(r, g, b, hsv)
+        const tolerance = isVibrant ? 8 : 15
+
+        const key = `${Math.floor(r / tolerance)}-${Math.floor(g / tolerance)}-${Math.floor(b / tolerance)}`
+
+        const pixelWeight = centerWeight * topWeight * (isVibrant ? 10 : 1)
+
+        if (colorStats.has(key)) {
+          const existing = colorStats.get(key)!
+          existing.count++
+          existing.weight += pixelWeight
+          const total = existing.count
+          existing.r = Math.round((existing.r * (total - 1) + r) / total)
+          existing.g = Math.round((existing.g * (total - 1) + g) / total)
+          existing.b = Math.round((existing.b * (total - 1) + b) / total)
+          existing.isVibrant = existing.isVibrant || isVibrant
+        } else {
+          colorStats.set(key, {
+            r,
+            g,
+            b,
+            count: 1,
+            weight: pixelWeight,
+            isVibrant,
+          })
+        }
+      }
+    }
+
+    // Converter para array final
+    const candidateColors: VibrantColor[] = []
+
+    for (const color of colorStats.values()) {
+      if (color.count < 5) continue
+
+      const hsv = this.rgbToHsv(color.r, color.g, color.b)
+
+      candidateColors.push({
+        r: color.r,
+        g: color.g,
+        b: color.b,
+        saturation: hsv.s,
+        brightness: hsv.v,
+        hue: hsv.h,
+        population: color.weight,
+        colorName: this.getColorName(hsv.h, hsv.s, color.isVibrant),
+      })
+    }
+
+    // Ordenar por vibração, saturação e peso
+    candidateColors.sort((a, b) => {
+      const aIsVibrant = this.isVibrantColor(a.r, a.g, a.b, { h: a.hue, s: a.saturation, v: a.brightness }) ? 1000 : 0
+      const bIsVibrant = this.isVibrantColor(b.r, b.g, b.b, { h: b.hue, s: b.saturation, v: b.brightness }) ? 1000 : 0
+
+      const scoreA = aIsVibrant + a.saturation * 500 + a.population
+      const scoreB = bIsVibrant + b.saturation * 500 + b.population
+
+      return scoreB - scoreA
+    })
+
+    return candidateColors.slice(0, 8)
+  }
+
+  private static getCenterWeight(x: number, y: number, width: number, height: number): number {
+    const centerX = width / 2
+    const centerY = height / 2
+    const maxDistance = Math.sqrt(centerX * centerX + centerY * centerY)
+    const distance = Math.sqrt((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY))
+    return Math.max(0.5, 1 - (distance / maxDistance) * 0.5)
+  }
+
+  private static isVibrantColor(r: number, g: number, b: number, hsv: { h: number; s: number; v: number }): boolean {
+    // Detecção específica para VERMELHOS VIBRANTES (como rgb(225, 1, 30))
+    const isRedVibrant =
+      ((hsv.h >= 0 && hsv.h <= 15) || (hsv.h >= 345 && hsv.h <= 360)) &&
+      hsv.s > 0.8 &&
+      hsv.v > 0.4 &&
+      r > 150 &&
+      r > g * 3 &&
+      r > b * 3
+
+    // Detecção para VERMELHOS ESCUROS (como rgb(75, 11, 25))
+    const isRedDark =
+      ((hsv.h >= 0 && hsv.h <= 20) || (hsv.h >= 340 && hsv.h <= 360)) &&
+      hsv.s > 0.6 &&
+      hsv.v > 0.2 &&
+      hsv.v < 0.6 &&
+      r > g * 2 &&
+      r > b * 1.5
+
+    // Detecção para ROSAS/MAGENTAS
+    const isRoseHue = (hsv.h >= 300 && hsv.h <= 340) || (hsv.h >= 15 && hsv.h <= 45)
+    const isRoseRGB = r > 120 && r > g && b > 80 && r > b * 0.8
+    const isRose = isRoseHue && isRoseRGB && hsv.s > 0.4 && hsv.v > 0.3
+
+    // Detecção para VERDES VIBRANTES
+    const isGreenHue = hsv.h >= 80 && hsv.h <= 160
+    const isGreenRGB = g > 120 && g > r * 1.2 && g > b * 1.2
+    const isGreen = isGreenHue && isGreenRGB && hsv.s > 0.4 && hsv.v > 0.3
+
+    // Detecção para AZUIS VIBRANTES
+    const isBlueHue = hsv.h >= 200 && hsv.h <= 260
+    const isBlueRGB = b > 120 && b > r * 1.2 && b > g * 1.2
+    const isBlue = isBlueHue && isBlueRGB && hsv.s > 0.4 && hsv.v > 0.3
+
+    // Detecção para AMARELOS/LARANJAS
+    const isYellowOrange = hsv.h >= 45 && hsv.h <= 80 && hsv.s > 0.6 && hsv.v > 0.5
+
+    return isRedVibrant || isRedDark || isRose || isGreen || isBlue || isYellowOrange
+  }
+
+  private static getColorName(hue: number, saturation: number, isVibrant: boolean): string {
+    if (isVibrant) {
+      if ((hue >= 0 && hue <= 15) || (hue >= 345 && hue <= 360)) return "🔴 Vermelho Vibrante"
+      if (hue >= 15 && hue <= 45) return "🧡 Laranja Vibrante"
+      if (hue >= 45 && hue <= 80) return "💛 Amarelo Vibrante"
+      if (hue >= 80 && hue <= 160) return "💚 Verde Vibrante"
+      if (hue >= 160 && hue <= 200) return "💚 Verde Água"
+      if (hue >= 200 && hue <= 260) return "💙 Azul Vibrante"
+      if (hue >= 260 && hue <= 300) return "💜 Roxo Vibrante"
+      if (hue >= 300 && hue <= 345) return "🌸 Rosa Vibrante"
+    }
+
+    if (saturation < 0.3) return "⚪ Neutro"
+    if ((hue >= 0 && hue <= 20) || (hue >= 340 && hue <= 360)) return "❤️ Vermelho"
+    if (hue >= 20 && hue <= 60) return "🧡 Laranja"
+    if (hue >= 60 && hue <= 120) return "💛 Amarelo"
+    if (hue >= 120 && hue <= 180) return "💚 Verde"
+    if (hue >= 180 && hue <= 240) return "💙 Azul"
+    if (hue >= 240 && hue <= 300) return "💜 Roxo"
+    if (hue >= 300 && hue <= 340) return "🌸 Rosa"
+    return "🎨 Cor Única"
+  }
+
+  private static rgbToHsv(r: number, g: number, b: number): { h: number; s: number; v: number } {
+    r /= 255
+    g /= 255
+    b /= 255
+    const max = Math.max(r, g, b)
+    const min = Math.min(r, g, b)
+    const diff = max - min
+    let h = 0
+    const s = max === 0 ? 0 : diff / max
+    const v = max
+
+    if (diff !== 0) {
+      switch (max) {
+        case r:
+          h = ((g - b) / diff + (g < b ? 6 : 0)) / 6
+          break
+        case g:
+          h = ((b - r) / diff + 2) / 6
+          break
+        case b:
+          h = ((r - g) / diff + 4) / 6
+          break
+      }
+    }
+    return { h: h * 360, s, v }
+  }
 }
 
 export default function ProfilePage() {
   // Estados para o gradiente automático
   const [autoGradient, setAutoGradient] = useState<string | null>(null)
-  const [dominantColors, setDominantColors] = useState<DominantColor[]>([])
+  const [dominantColors, setDominantColors] = useState<VibrantColor[]>([])
 
   // Efeito para injetar os estilos CSS do marquee
   useEffect(() => {
@@ -166,7 +371,6 @@ export default function ProfilePage() {
   const [tempCoverImage, setTempCoverImage] = useState("")
   const [tempAvatarImage, setTempAvatarImage] = useState("")
   const [showRemoveCoverModal, setShowRemoveCoverModal] = useState(false)
-  // Adicione este estado após os outros estados de edição de perfil
   const [tempCoverRemoved, setTempCoverRemoved] = useState(false)
 
   // Estados do Spotify
@@ -187,7 +391,7 @@ export default function ProfilePage() {
   const [megaMenuDescription, setMegaMenuDescription] = useState("Descubra mais conteúdo incrível na nossa plataforma")
   const [showMegaMenuState, setShowMegaMenuState] = useState(false)
 
-  // Adicionar estados para o menu dropdown após os outros estados:
+  // Estados para o menu dropdown
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [userMenuSection, setUserMenuSection] = useState("main")
 
@@ -383,7 +587,7 @@ export default function ProfilePage() {
       // Configura intervalo para verificar música atual a cada 0.5 segundo
       const interval = setInterval(() => {
         fetchCurrentTrack(savedToken)
-      }, 500) // Mudado de 1000 para 500
+      }, 500)
 
       // Configura renovação automática do token a cada 50 minutos
       const refreshInterval = setInterval(
@@ -393,7 +597,7 @@ export default function ProfilePage() {
           }
         },
         50 * 60 * 1000,
-      ) // 50 minutos
+      )
 
       return () => {
         clearInterval(interval)
@@ -446,7 +650,7 @@ export default function ProfilePage() {
       // Configura intervalo para verificar música atual a cada 0.5 segundo
       const interval = setInterval(() => {
         fetchCurrentTrack(accessToken)
-      }, 500) // Mudado de 1000 para 500
+      }, 500)
 
       // Remove os parâmetros da URL
       window.history.replaceState({}, document.title, window.location.pathname)
@@ -470,7 +674,7 @@ export default function ProfilePage() {
           return Math.min(newProgress, trackDuration)
         })
         setLastUpdateTime(Date.now())
-      }, 100) // Atualiza a cada 100ms para suavidade
+      }, 100)
     }
 
     return () => {
@@ -710,7 +914,7 @@ export default function ProfilePage() {
       const reader = new FileReader()
       reader.onload = (e) => {
         setTempCoverImage(e.target?.result as string)
-        setTempCoverRemoved(false) // Reset o estado de remoção quando uma nova imagem é carregada
+        setTempCoverRemoved(false)
       }
       reader.readAsDataURL(file)
     }
@@ -874,7 +1078,7 @@ export default function ProfilePage() {
     setNewComment("")
   }
 
-  // Função para extrair cores dominantes
+  // Função para extrair cores dominantes usando a nova lógica
   const extractDominantColors = useCallback((imageUrl: string) => {
     const canvas = colorAnalysisCanvasRef.current
     if (!canvas) return
@@ -887,7 +1091,7 @@ export default function ProfilePage() {
 
     img.onload = () => {
       // Redimensionar para análise mais rápida
-      const maxSize = 100
+      const maxSize = 300
       const ratio = Math.min(maxSize / img.width, maxSize / img.height)
       const width = img.width * ratio
       const height = img.height * ratio
@@ -898,41 +1102,15 @@ export default function ProfilePage() {
       ctx.drawImage(img, 0, 0, width, height)
 
       const imageData = ctx.getImageData(0, 0, width, height)
-      const data = imageData.data
 
-      const colorMap = new Map<string, DominantColor>()
-
-      // Analisar pixels
-      for (let i = 0; i < data.length; i += 16) {
-        const r = data[i]
-        const g = data[i + 1]
-        const b = data[i + 2]
-        const alpha = data[i + 3]
-
-        // Ignorar pixels transparentes ou muito escuros/claros
-        if (alpha < 128 || r + g + b < 50 || r + g + b > 650) continue
-
-        // Agrupar cores similares
-        const roundedR = Math.round(r / 20) * 20
-        const roundedG = Math.round(g / 20) * 20
-        const roundedB = Math.round(b / 20) * 20
-
-        const key = `${roundedR},${roundedG},${roundedB}`
-
-        if (colorMap.has(key)) {
-          colorMap.get(key)!.count++
-        } else {
-          colorMap.set(key, { r: roundedR, g: roundedG, b: roundedB, count: 1 })
-        }
+      try {
+        const colors = SmartColorExtractor.extractVibrantColors(imageData)
+        setDominantColors(colors)
+        generateAutoGradient(colors)
+      } catch (error) {
+        console.error("Erro na extração:", error)
+        setDominantColors([])
       }
-
-      // Ordenar por frequência e pegar as top 5
-      const sortedColors = Array.from(colorMap.values())
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5)
-
-      setDominantColors(sortedColors)
-      generateAutoGradient(sortedColors)
     }
 
     img.src = imageUrl
@@ -948,92 +1126,59 @@ export default function ProfilePage() {
     img.crossOrigin = "anonymous"
 
     img.onload = () => {
-      // Redimensionar para análise mais rápida
-      const maxSize = 100
+      const maxSize = 300
       const ratio = Math.min(maxSize / img.width, maxSize / img.height)
-      const width = img.width * ratio
-      const height = img.height * ratio
+      canvas.width = img.width * ratio
+      canvas.height = img.height * ratio
 
-      canvas.width = width
-      canvas.height = height
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
 
-      ctx.drawImage(img, 0, 0, width, height)
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
 
-      const imageData = ctx.getImageData(0, 0, width, height)
-      const data = imageData.data
-
-      const colorMap = new Map<string, DominantColor>()
-
-      // Analisar pixels
-      for (let i = 0; i < data.length; i += 16) {
-        const r = data[i]
-        const g = data[i + 1]
-        const b = data[i + 2]
-        const alpha = data[i + 3]
-
-        // Ignorar pixels transparentes ou muito escuros/claros
-        if (alpha < 128 || r + g + b < 50 || r + g + b > 650) continue
-
-        // Agrupar cores similares
-        const roundedR = Math.round(r / 20) * 20
-        const roundedG = Math.round(g / 20) * 20
-        const roundedB = Math.round(b / 20) * 20
-
-        const key = `${roundedR},${roundedG},${roundedB}`
-
-        if (colorMap.has(key)) {
-          colorMap.get(key)!.count++
-        } else {
-          colorMap.set(key, { r: roundedR, g: roundedG, b: roundedB, count: 1 })
-        }
+      try {
+        const colors = SmartColorExtractor.extractVibrantColors(imageData)
+        generateSpotifyGradient(colors)
+      } catch (error) {
+        console.error("Erro na extração do Spotify:", error)
       }
-
-      // Ordenar por frequência e pegar as top 5
-      const sortedColors = Array.from(colorMap.values())
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5)
-
-      // Gerar gradiente para o Spotify
-      generateSpotifyGradient(sortedColors)
     }
 
     img.src = imageUrl
   }, [])
 
   // Função para gerar gradiente para o card do Spotify
-  const generateSpotifyGradient = (colors: DominantColor[]) => {
+  const generateSpotifyGradient = (colors: VibrantColor[]) => {
     if (colors.length === 0) {
-      setSpotifyGradient("linear-gradient(135deg, #1DB954, #191414)")
+      setSpotifyGradient("linear-gradient(to bottom left, rgb(29, 185, 84), rgb(25, 20, 20))")
       return
     }
 
     const primaryColor = colors[0]
     const secondaryColor = colors[1] || primaryColor
 
-    // Criar versões mais escuras e suaves para o gradiente
-    const darkPrimary = `rgba(${Math.round(primaryColor.r * 0.4)}, ${Math.round(primaryColor.g * 0.4)}, ${Math.round(primaryColor.b * 0.4)}, 0.9)`
-    const lightSecondary = `rgba(${Math.round(secondaryColor.r * 0.6)}, ${Math.round(secondaryColor.g * 0.6)}, ${Math.round(secondaryColor.b * 0.6)}, 0.8)`
+    // Criar versões mais escuras para o gradiente
+    const darkPrimary = `rgb(${Math.round(primaryColor.r * 0.4)}, ${Math.round(primaryColor.g * 0.4)}, ${Math.round(primaryColor.b * 0.4)})`
+    const lightSecondary = `rgb(${Math.round(secondaryColor.r * 0.6)}, ${Math.round(secondaryColor.g * 0.6)}, ${Math.round(secondaryColor.b * 0.6)})`
 
-    const gradient = `linear-gradient(135deg, ${darkPrimary}, ${lightSecondary})`
+    const gradient = `linear-gradient(to bottom left, ${lightSecondary}, ${darkPrimary})`
     setSpotifyGradient(gradient)
   }
 
   // Função para gerar gradiente automático
-  const generateAutoGradient = (colors: DominantColor[]) => {
+  const generateAutoGradient = (colors: VibrantColor[]) => {
     if (colors.length === 0) {
-      setAutoGradient("linear-gradient(135deg, #1a1a1a, #000)")
+      setAutoGradient("linear-gradient(to bottom left, rgb(59, 130, 246), rgb(139, 92, 246))")
       return
     }
 
     const primaryColor = colors[0]
     const secondaryColor = colors[1] || primaryColor
 
-    // Criar versões mais escuras e suaves para o gradiente
-    const darkPrimary = `rgb(${Math.round(primaryColor.r * 0.2)}, ${Math.round(primaryColor.g * 0.2)}, ${Math.round(primaryColor.b * 0.2)})`
-    const mediumPrimary = `rgb(${Math.round(primaryColor.r * 0.35)}, ${Math.round(primaryColor.g * 0.35)}, ${Math.round(primaryColor.b * 0.35)})`
-    const lightSecondary = `rgb(${Math.round(secondaryColor.r * 0.5)}, ${Math.round(secondaryColor.g * 0.5)}, ${Math.round(secondaryColor.b * 0.5)})`
+    // Criar versões mais escuras para o gradiente
+    const lightPrimary = `rgb(${Math.round(primaryColor.r * 0.8)}, ${Math.round(primaryColor.g * 0.8)}, ${Math.round(primaryColor.b * 0.8)})`
+    const darkSecondary = `rgb(${Math.round(secondaryColor.r * 0.4)}, ${Math.round(secondaryColor.g * 0.4)}, ${Math.round(secondaryColor.b * 0.4)})`
 
-    const gradient = `linear-gradient(45deg, ${lightSecondary} 0%, ${mediumPrimary} 50%, ${darkPrimary} 100%)`
+    const gradient = `linear-gradient(to bottom left, ${lightPrimary}, ${darkSecondary})`
     setAutoGradient(gradient)
   }
 
@@ -1209,7 +1354,7 @@ export default function ProfilePage() {
               <Button variant="outline" size="sm">
                 <Bell className="w-4 h-4" />
               </Button>
-              {/* Substituir o Avatar no header por este código com dropdown: */}
+              {/* User Menu Dropdown */}
               <div className="relative">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
@@ -1349,7 +1494,7 @@ export default function ProfilePage() {
                       </div>
                     )}
 
-                    {/* Manter as outras seções do menu iguais */}
+                    {/* Settings Section */}
                     {userMenuSection === "settings" && (
                       <div className="p-4">
                         <button
@@ -1381,6 +1526,7 @@ export default function ProfilePage() {
                       </div>
                     )}
 
+                    {/* Help Section */}
                     {userMenuSection === "help" && (
                       <div className="p-4">
                         <button
@@ -1412,6 +1558,7 @@ export default function ProfilePage() {
                       </div>
                     )}
 
+                    {/* Accessibility Section */}
                     {userMenuSection === "accessibility" && (
                       <div className="p-4">
                         <button
@@ -1443,6 +1590,7 @@ export default function ProfilePage() {
                       </div>
                     )}
 
+                    {/* Display Section */}
                     {userMenuSection === "display" && (
                       <div className="p-4">
                         <button
@@ -1496,7 +1644,7 @@ export default function ProfilePage() {
             background:
               coverImage && coverImage !== "/placeholder.svg?height=192&width=768"
                 ? "none"
-                : autoGradient || "linear-gradient(to-r, #3b82f6, #8b5cf6)",
+                : autoGradient || "linear-gradient(to bottom left, rgb(59, 130, 246), rgb(139, 92, 246))",
           }}
         >
           {coverImage && coverImage !== "/placeholder.svg?height=192&width=768" ? (
@@ -1635,8 +1783,8 @@ export default function ProfilePage() {
                     className="absolute inset-0 z-0 transition-opacity duration-500"
                     style={{
                       background: isPlaying
-                        ? spotifyGradient || "linear-gradient(135deg, #1DB954, #191414)"
-                        : "linear-gradient(135deg, #2d3748, #1a202c)", // Gradiente azul-cinza escuro para pausado
+                        ? spotifyGradient || "linear-gradient(to bottom left, rgb(29, 185, 84), rgb(25, 20, 20))"
+                        : "linear-gradient(to bottom left, rgb(45, 55, 72), rgb(26, 32, 44))",
                       opacity: isSpotifyExpanded ? 0.85 : 0.95,
                     }}
                   ></div>
@@ -2439,7 +2587,7 @@ export default function ProfilePage() {
                 <div className="text-right text-xs text-gray-500 mt-1">{newPostContent.length}/500 caracteres</div>
               </div>
 
-              {/* No modal de criar post, substitua a seção de preview de mídia por: */}
+              {/* Preview de mídia */}
               {newPostMedia && (
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border">
                   <div className="w-16 h-12 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
@@ -2544,6 +2692,20 @@ export default function ProfilePage() {
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
+                  <select
+                    value={newPostCategory}
+                    onChange={(e) => setNewPostCategory(e.target.value)}
+                    className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    {categories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
@@ -2556,165 +2718,27 @@ export default function ProfilePage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setShowYoutubeInput(true)}
-                    disabled={!!newPostMedia || showYoutubeInput}
+                    onClick={() => setShowYoutubeInput(!showYoutubeInput)}
+                    disabled={!!newPostMedia}
                   >
                     <Youtube className="w-4 h-4 mr-2" />
                     YouTube
                   </Button>
                 </div>
-                <div>
-                  <select
-                    className="border rounded-lg px-3 py-2 text-sm"
-                    value={newPostCategory}
-                    onChange={(e) => setNewPostCategory(e.target.value)}
-                  >
-                    {categories.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
-                </div>
               </div>
             </div>
-            <div className="p-4 border-t flex justify-end">
-              <Button onClick={handleCreatePost} disabled={!newPostContent.trim()}>
+
+            <div className="flex justify-end gap-3 p-4 border-t bg-gray-50">
+              <Button variant="outline" onClick={() => setShowCreatePostModal(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleCreatePost}
+                disabled={!newPostContent.trim()}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
                 Publicar
               </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Profile Modal */}
-      {showEditProfileModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b">
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="sm" onClick={handleCancelEdit}>
-                  <X className="w-5 h-5" />
-                </Button>
-                <h3 className="text-lg font-semibold">Edit profile</h3>
-              </div>
-              <Button
-                onClick={handleEditProfileSave}
-                className="bg-black text-white hover:bg-gray-800 rounded-full px-6"
-              >
-                Save
-              </Button>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Cover Image */}
-              <div className="relative">
-                <div
-                  className="relative h-32 rounded-xl overflow-hidden bg-gray-200"
-                  style={{
-                    background:
-                      tempCoverImage && tempCoverImage !== "/placeholder.svg?height=192&width=768" && !tempCoverRemoved
-                        ? "none"
-                        : autoGradient || "linear-gradient(to-r, #3b82f6, #8b5cf6)",
-                  }}
-                >
-                  {tempCoverImage && tempCoverImage !== "/placeholder.svg?height=192&width=768" && !tempCoverRemoved ? (
-                    <img
-                      src={tempCoverImage || "/placeholder.svg"}
-                      alt="Cover"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : null}
-
-                  {/* Profile Picture */}
-                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center gap-2">
-                    <button
-                      onClick={() => tempCoverInputRef.current?.click()}
-                      className="w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition-colors"
-                      title="Alterar capa"
-                    >
-                      <Upload className="w-5 h-5 text-white" />
-                    </button>
-
-                    {tempCoverImage &&
-                      tempCoverImage !== "/placeholder.svg?height=192&width=768" &&
-                      !tempCoverRemoved && (
-                        <button
-                          onClick={() => setTempCoverRemoved(true)}
-                          className="w-10 h-10 bg-red-500/70 hover:bg-red-600/80 rounded-full flex items-center justify-center transition-colors"
-                          title="Remover capa"
-                        >
-                          <X className="w-5 h-5 text-white" />
-                        </button>
-                      )}
-                  </div>
-                </div>
-
-                {/* Profile Picture */}
-                <div className="absolute -bottom-8 left-6">
-                  <div className="relative">
-                    <Avatar className="w-24 h-24 border-4 border-white shadow-lg">
-                      <AvatarImage src={tempAvatarImage || "/placeholder.svg"} />
-                      <AvatarFallback className="text-xl"></AvatarFallback>
-                    </Avatar>
-                    <button
-                      onClick={() => tempAvatarInputRef.current?.click()}
-                      className="absolute inset-0 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition-colors"
-                    >
-                      <Upload className="w-5 h-5 text-white" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Form Fields */}
-              <div className="space-y-4 pt-8">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
-                  <Input
-                    value={editingName}
-                    onChange={(e) => setEditingName(e.target.value)}
-                    className="w-full border-gray-300 rounded-lg"
-                    placeholder="Your name"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
-                  <textarea
-                    value={editingBio}
-                    onChange={(e) => {
-                      if (e.target.value.length <= 120) {
-                        setEditingBio(e.target.value)
-                      }
-                    }}
-                    className="w-full border-gray-300 rounded-lg min-h-[80px] resize-none"
-                    placeholder="Tell us about yourself"
-                    maxLength={120}
-                  />
-                  <div className="text-right text-xs text-gray-500 mt-1">{editingBio.length}/120 characters</div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                  <Input
-                    value={editingLocation}
-                    onChange={(e) => setEditingLocation(e.target.value)}
-                    className="w-full border-gray-300 rounded-lg"
-                    placeholder="Where are you located?"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
-                  <Input
-                    value={editingWebsite}
-                    onChange={(e) => setEditingWebsite(e.target.value)}
-                    className="w-full border-gray-300 rounded-lg"
-                    placeholder="Your website URL"
-                  />
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -2723,27 +2747,163 @@ export default function ProfilePage() {
       {/* Avatar Preview Modal */}
       {showAvatarPreview && (
         <div
-          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
           onClick={() => setShowAvatarPreview(false)}
         >
-          <div onClick={(e) => e.stopPropagation()}>
+          <div className="relative">
             <img
               src={avatarImage || "/placeholder.svg"}
-              alt="Profile picture"
-              className="w-[250px] h-[250px] object-cover rounded-full shadow-2xl"
+              alt="Avatar preview"
+              className="w-64 h-64 rounded-full object-cover"
+              onClick={(e) => e.stopPropagation()}
             />
           </div>
         </div>
       )}
 
+      {/* Edit Profile Modal */}
+      {showEditProfileModal && (
+        <div className="fixed inset-0 bg-white md:bg-black/50 flex items-start md:items-center justify-center z-50">
+          <div className="bg-white w-full h-full md:h-auto md:w-[480px] md:max-h-[90vh] md:rounded-2xl overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white z-10">
+              <div className="flex items-center gap-6">
+                <Button variant="ghost" size="icon" onClick={handleCancelEdit} className="rounded-full">
+                  <X className="w-5 h-5" />
+                </Button>
+                <h3 className="text-xl font-bold">Edit profile</h3>
+              </div>
+              <Button
+                onClick={handleEditProfileSave}
+                className="bg-black hover:bg-gray-800 text-white rounded-full px-6"
+              >
+                Save
+              </Button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Cover Image Section */}
+              <div className="relative">
+                <div
+                  className="h-40 w-full bg-gray-200"
+                  style={{
+                    background:
+                      tempCoverRemoved || !tempCoverImage || tempCoverImage === "/placeholder.svg?height=192&width=768"
+                        ? autoGradient || "linear-gradient(to bottom left, rgb(59, 130, 246), rgb(139, 92, 246))"
+                        : "none",
+                  }}
+                >
+                  {!tempCoverRemoved && tempCoverImage && tempCoverImage !== "/placeholder.svg?height=192&width=768" ? (
+                    <img
+                      src={tempCoverImage || "/placeholder.svg"}
+                      alt="Cover preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : null}
+                  <button
+                    onClick={() => tempCoverInputRef.current?.click()}
+                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-black/60 hover:bg-black/70 rounded-full flex items-center justify-center transition-colors"
+                  >
+                    <Upload className="w-5 h-5 text-white" />
+                  </button>
+                </div>
+
+                {/* Avatar Section */}
+                <div className="absolute left-6 -bottom-12">
+                  <div className="relative">
+                    <Avatar className="w-24 h-24 border-4 border-white">
+                      <AvatarImage src={tempAvatarImage || "/placeholder.svg"} />
+                      <AvatarFallback></AvatarFallback>
+                    </Avatar>
+                    <button
+                      onClick={() => tempAvatarInputRef.current?.click()}
+                      className="absolute bottom-0 right-0 w-8 h-8 bg-black/60 hover:bg-black/70 rounded-full flex items-center justify-center transition-colors"
+                    >
+                      <Upload className="w-4 h-4 text-white" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Form Fields */}
+              <div className="px-6 pt-14 pb-6 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Name</label>
+                  <Input value={editingName} onChange={(e) => setEditingName(e.target.value)} placeholder="Your name" />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Bio</label>
+                  <textarea
+                    className="w-full border rounded-lg p-3 min-h-[100px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    value={editingBio}
+                    onChange={(e) => setEditingBio(e.target.value)}
+                    placeholder="Tell us about yourself..."
+                    maxLength={300}
+                  />
+                  <div className="text-right text-xs text-gray-500">{editingBio.length}/300 characters</div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Location</label>
+                  <Input
+                    value={editingLocation}
+                    onChange={(e) => setEditingLocation(e.target.value)}
+                    placeholder="Your location"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Website</label>
+                  <Input
+                    value={editingWebsite}
+                    onChange={(e) => setEditingWebsite(e.target.value)}
+                    placeholder="Your website"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Cover Confirmation Modal */}
+      {showRemoveCoverModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Remove cover photo?</h3>
+              <p className="text-gray-600 mb-6">
+                This will remove your current cover photo. A gradient based on your profile picture will be used
+                instead.
+              </p>
+              <div className="flex justify-end gap-3">
+                <Button variant="outline" onClick={() => setShowRemoveCoverModal(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    setTempCoverRemoved(true)
+                    setTempCoverImage("/placeholder.svg?height=192&width=768")
+                    setShowRemoveCoverModal(false)
+                  }}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Remove
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* YouTube Modal */}
-      {showYouTubeModal && (
+      {showYouTubeModal && currentYouTubeUrl && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b">
               <div className="flex items-center gap-3">
                 <Youtube className="w-6 h-6 text-red-600" />
-                <h3 className="text-lg font-semibold">{currentVideoData?.title || "YouTube Video"}</h3>
+                <h3 className="text-lg font-semibold">{currentVideoData?.title || "Vídeo do YouTube"}</h3>
               </div>
               <Button variant="ghost" size="sm" onClick={closeYouTubeModal}>
                 <X className="w-4 h-4" />
@@ -2753,30 +2913,41 @@ export default function ProfilePage() {
             <div className="flex flex-col lg:flex-row h-[calc(90vh-80px)]">
               {/* Video Player */}
               <div className="flex-1 bg-black flex items-center justify-center">
-                {currentYouTubeUrl && (
+                {getYouTubeEmbedUrl(currentYouTubeUrl) ? (
                   <iframe
                     src={getYouTubeEmbedUrl(currentYouTubeUrl) || ""}
                     className="w-full h-full"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
-                  />
+                  ></iframe>
+                ) : (
+                  <div className="text-white text-center">
+                    <Youtube className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <p>Não foi possível carregar o vídeo</p>
+                  </div>
                 )}
               </div>
 
-              {/* Comments Section */}
-              <div className="lg:w-96 border-l bg-gray-50 flex flex-col">
+              {/* Comments Sidebar */}
+              <div className="lg:w-80 border-l bg-gray-50 flex flex-col">
                 <div className="p-4 border-b bg-white">
-                  <h4 className="font-semibold mb-2">Comments</h4>
+                  <h4 className="font-semibold text-gray-900 mb-2">Comentários</h4>
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Add a comment..."
+                      placeholder="Adicione um comentário..."
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                       className="flex-1"
+                      onKeyPress={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault()
+                          handleAddComment()
+                        }
+                      }}
                     />
                     <Button onClick={handleAddComment} size="sm">
-                      Post
+                      Enviar
                     </Button>
                   </div>
                 </div>
@@ -2785,31 +2956,30 @@ export default function ProfilePage() {
                   {videoComments.length > 0 ? (
                     videoComments.map((comment) => (
                       <div key={comment.id} className="flex gap-3">
-                        <Avatar className="w-8 h-8">
+                        <Avatar className="w-8 h-8 flex-shrink-0">
                           <AvatarImage src={comment.avatar || "/placeholder.svg"} />
                           <AvatarFallback>{comment.user[0]}</AvatarFallback>
                         </Avatar>
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-sm">{comment.user}</span>
+                            <span className="text-sm font-medium text-gray-900">{comment.user}</span>
                             <span className="text-xs text-gray-500">{comment.timestamp}</span>
                           </div>
-                          <p className="text-sm text-gray-900">{comment.comment}</p>
+                          <p className="text-sm text-gray-700">{comment.comment}</p>
                           <div className="flex items-center gap-4 mt-2">
                             <button className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700">
                               <Heart className="w-3 h-3" />
                               {comment.likes}
                             </button>
-                            <button className="text-xs text-gray-500 hover:text-gray-700">Reply</button>
+                            <button className="text-xs text-gray-500 hover:text-gray-700">Responder</button>
                           </div>
                         </div>
                       </div>
                     ))
                   ) : (
                     <div className="text-center text-gray-500 py-8">
-                      <MessageCircle className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                      <p className="text-sm">No comments yet</p>
-                      <p className="text-xs">Be the first to comment!</p>
+                      <MessageCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Seja o primeiro a comentar!</p>
                     </div>
                   )}
                 </div>

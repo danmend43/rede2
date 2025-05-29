@@ -2,15 +2,19 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { refresh_token } = body
+    const { refresh_token } = await request.json()
 
     if (!refresh_token) {
-      return NextResponse.json({ error: "Refresh token is required" }, { status: 400 })
+      return NextResponse.json({ error: "Refresh token é obrigatório" }, { status: 400 })
     }
 
     const clientId = "384115184ce848c1bf39bdd8d0209f83"
     const clientSecret = process.env.SPOTIFY_CLIENT_SECRET
+
+    if (!clientSecret) {
+      console.error("SPOTIFY_CLIENT_SECRET não configurado")
+      return NextResponse.json({ error: "Configuração do servidor inválida" }, { status: 500 })
+    }
 
     const response = await fetch("https://accounts.spotify.com/api/token", {
       method: "POST",
@@ -25,14 +29,19 @@ export async function POST(request: NextRequest) {
     })
 
     if (!response.ok) {
-      console.error("Token refresh failed:", await response.text())
-      return NextResponse.json({ error: "Failed to refresh token" }, { status: response.status })
+      console.error("Erro ao renovar token:", response.status)
+      return NextResponse.json({ error: "Falha ao renovar token" }, { status: response.status })
     }
 
     const data = await response.json()
-    return NextResponse.json(data)
+
+    return NextResponse.json({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token || refresh_token, // Spotify pode não retornar um novo refresh_token
+      expires_in: data.expires_in,
+    })
   } catch (error) {
-    console.error("Error refreshing token:", error)
-    return NextResponse.json({ error: "Server error" }, { status: 500 })
+    console.error("Erro ao renovar token do Spotify:", error)
+    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
   }
 }
