@@ -1356,8 +1356,15 @@ export default function ProfilePage() {
                           <span className="text-white text-sm font-medium flex-shrink-0 mr-1">
                             {isPlaying ? "Ouvindo" : "Pausado"} -
                           </span>
-                          <div className="overflow-hidden flex-1 relative">
-                            <div className="text-white text-sm font-medium truncate">{currentSpotifyTrack.name}</div>
+                          <div
+                            className="overflow-hidden flex-1 relative text-fade-container"
+                            style={{ "--fade-color": isPlaying ? "rgba(29, 185, 84, 0.8)" : "rgba(45, 55, 72, 0.8)" }}
+                          >
+                            <div
+                              className={`text-white text-sm font-medium ${currentSpotifyTrack.name.length > 20 ? "animate-slow-marquee" : ""}`}
+                            >
+                              {currentSpotifyTrack.name}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1373,10 +1380,16 @@ export default function ProfilePage() {
                             />
                             <div className="absolute inset-0 bg-black/20 rounded-md"></div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-white truncate text-sm drop-shadow-sm">
-                              {currentSpotifyTrack.name}
-                            </p>
+                          <div className="flex-1 min-w-0 pr-6">
+                            {" "}
+                            {/* Adicionado pr-6 para dar espaço ao ícone */}
+                            <div className="text-fade-container" style={{ "--fade-color": "rgba(0, 0, 0, 0.5)" }}>
+                              <p
+                                className={`font-medium text-white text-sm drop-shadow-sm ${currentSpotifyTrack.name.length > 20 ? "animate-slow-marquee" : ""}`}
+                              >
+                                {currentSpotifyTrack.name}
+                              </p>
+                            </div>
                             <p className="text-xs text-gray-100 truncate opacity-90">
                               {currentSpotifyTrack.artists?.map((artist: any) => artist.name).join(", ")}
                             </p>
