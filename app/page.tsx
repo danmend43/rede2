@@ -314,10 +314,10 @@ export default function ProfilePage() {
       fetchSpotifyUser(savedToken)
       fetchCurrentTrack(savedToken)
 
-      // Configura intervalo para verificar música atual a cada 1 segundo
+      // Configura intervalo para verificar música atual a cada 0.5 segundo
       const interval = setInterval(() => {
         fetchCurrentTrack(savedToken)
-      }, 1000)
+      }, 500) // Mudado de 1000 para 500
 
       // Configura renovação automática do token a cada 50 minutos
       const refreshInterval = setInterval(
@@ -377,9 +377,10 @@ export default function ProfilePage() {
       fetchSpotifyUser(accessToken)
       fetchCurrentTrack(accessToken)
 
+      // Configura intervalo para verificar música atual a cada 0.5 segundo
       const interval = setInterval(() => {
         fetchCurrentTrack(accessToken)
-      }, 1000)
+      }, 500) // Mudado de 1000 para 500
 
       // Remove os parâmetros da URL
       window.history.replaceState({}, document.title, window.location.pathname)
@@ -1343,20 +1344,21 @@ export default function ProfilePage() {
                       }
                     }}
                   >
+                    {/* Estado Mínimo */}
                     {!isSpotifyExpanded ? (
-                      // Estado Mínimo
                       <div className="flex items-center gap-2 pr-8 overflow-hidden">
                         <div
                           className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                            isPlaying ? "bg-[#1DB954]" : "bg-orange-400" // Laranja mais vibrante para contrastar
+                            isPlaying ? "bg-[#1DB954]" : "bg-orange-400"
                           }`}
                         ></div>
-                        <div className="flex items-center whitespace-nowrap min-w-0 flex-1">
-                          <span className="text-white text-sm font-medium flex-shrink-0">
-                            {isPlaying ? "Ouvindo" : "Pausado"} -{" "}
+                        <div className="flex items-center min-w-0 flex-1">
+                          <span className="text-white text-sm font-medium flex-shrink-0 mr-1">
+                            {isPlaying ? "Ouvindo" : "Pausado"} -
                           </span>
                           <div className="overflow-hidden flex-1 relative">
                             <div
+                              key={currentSpotifyTrack.id} // Key para reiniciar animação
                               className={`text-white text-sm font-medium inline-block ${
                                 currentSpotifyTrack.name.length > 20 ? "animate-spotify-marquee" : ""
                               }`}

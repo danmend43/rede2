@@ -97,16 +97,16 @@ body {
   0% {
     transform: translateX(0);
   }
-  25% {
+  20% {
     transform: translateX(-100%);
   }
-  25.01% {
+  20.01% {
     transform: translateX(100%);
   }
-  50% {
+  40% {
     transform: translateX(100%);
   }
-  75% {
+  60% {
     transform: translateX(0);
   }
   100% {
@@ -117,8 +117,8 @@ body {
 .animate-spotify-marquee {
   display: inline-block;
   white-space: nowrap;
-  animation: spotify-marquee 8s ease-in-out infinite;
-  animation-delay: 1s;
+  animation: spotify-marquee 6s ease-in-out infinite;
+  animation-delay: 0.5s;
 }
 
 @keyframes marquee {
