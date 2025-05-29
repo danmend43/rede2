@@ -127,6 +127,9 @@ export default function ProfilePage() {
   const [spotifyGradient, setSpotifyGradient] = useState<string | null>(null)
   const [trackProgress, setTrackProgress] = useState(0)
   const [trackDuration, setTrackDuration] = useState(0)
+  const [localProgress, setLocalProgress] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [lastUpdateTime, setLastUpdateTime] = useState(0)
 
   // Estado do mega menu
   const [megaMenuDescription, setMegaMenuDescription] = useState("Descubra mais conteúdo incrível na nossa plataforma")
@@ -289,6 +292,25 @@ export default function ProfilePage() {
     setTempAvatarImage(avatarImage)
   }, [userProfile, coverImage, avatarImage])
 
+  const fetchSpotifyUser = async (token: string) => {
+    try {
+      const response = await fetch("https://api.spotify.com/v1/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setSpotifyUser(data)
+      } else {
+        console.error("Erro ao buscar informações do usuário:", response.status)
+      }
+    } catch (error) {
+      console.error("Erro ao buscar informações do usuário:", error)
+    }
+  }
+
   // Efeito do Spotify
   useEffect(() => {
     // Verifica se há token do Spotify no localStorage
@@ -301,10 +323,10 @@ export default function ProfilePage() {
       fetchSpotifyUser(savedToken)
       fetchCurrentTrack(savedToken)
 
-      // Configura intervalo para verificar música atual a cada 3 segundos
+      // Configura intervalo para verificar música atual a cada 1 segundo
       const interval = setInterval(() => {
         fetchCurrentTrack(savedToken)
-      }, 3000)
+      }, 1000)
 
       // Configura renovação automática do token a cada 50 minutos
       const refreshInterval = setInterval(
@@ -366,7 +388,7 @@ export default function ProfilePage() {
 
       const interval = setInterval(() => {
         fetchCurrentTrack(accessToken)
-      }, 3000)
+      }, 1000)
 
       // Remove os parâmetros da URL
       window.history.replaceState({}, document.title, window.location.pathname)
@@ -375,30 +397,30 @@ export default function ProfilePage() {
     }
   }, [])
 
-  // Funções do Spotify
-  const fetchSpotifyUser = async (token: string) => {
-    try {
-      const response = await fetch("https://api.spotify.com/v1/me", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+  // Efeito para atualizar progresso local em tempo real
+  useEffect(() => {
+    let progressInterval: NodeJS.Timeout
 
-      if (response.ok) {
-        const user = await response.json()
-        setSpotifyUser(user)
-        setSpotifyError(null)
-      } else {
-        console.error("Failed to fetch Spotify user:", response.status)
-        if (response.status === 401) {
-          handleSpotifyDisconnect()
-        }
-      }
-    } catch (error) {
-      console.error("Erro ao buscar usuário Spotify:", error)
-      setSpotifyError("Erro ao conectar com o Spotify")
+    if (isPlaying && trackDuration > 0) {
+      progressInterval = setInterval(() => {
+        setLocalProgress((prev) => {
+          const now = Date.now()
+          const timeDiff = now - lastUpdateTime
+          const newProgress = prev + timeDiff
+
+          // Não deixa ultrapassar a duração da música
+          return Math.min(newProgress, trackDuration)
+        })
+        setLastUpdateTime(Date.now())
+      }, 100) // Atualiza a cada 100ms para suavidade
     }
-  }
+
+    return () => {
+      if (progressInterval) {
+        clearInterval(progressInterval)
+      }
+    }
+  }, [isPlaying, trackDuration, lastUpdateTime])
 
   const fetchCurrentTrack = async (token: string) => {
     try {
@@ -410,24 +432,38 @@ export default function ProfilePage() {
 
       if (response.ok && response.status !== 204) {
         const data = await response.json()
-        if (data && data.item && data.is_playing) {
+        if (data && data.item) {
+          // Verifica se é uma música diferente
+          const isDifferentTrack = !currentSpotifyTrack || currentSpotifyTrack.id !== data.item.id
+
           setCurrentSpotifyTrack(data.item)
-          setTrackProgress(data.progress_ms || 0)
+          setIsPlaying(data.is_playing || false)
           setTrackDuration(data.item.duration_ms || 0)
 
-          // Analisar cores da imagem do álbum se disponível
-          if (data.item.album?.images?.[0]?.url) {
+          // Atualiza progresso e tempo apenas se mudou de música ou se está tocando
+          if (isDifferentTrack || data.is_playing) {
+            setTrackProgress(data.progress_ms || 0)
+            setLocalProgress(data.progress_ms || 0)
+            setLastUpdateTime(Date.now())
+          }
+
+          // Analisar cores da imagem do álbum se disponível e se mudou de música
+          if (isDifferentTrack && data.item.album?.images?.[0]?.url) {
             extractSpotifyAlbumColors(data.item.album.images[0].url)
           }
         } else {
           setCurrentSpotifyTrack(null)
+          setIsPlaying(false)
           setTrackProgress(0)
           setTrackDuration(0)
+          setLocalProgress(0)
         }
       } else if (response.status === 204) {
         setCurrentSpotifyTrack(null)
+        setIsPlaying(false)
         setTrackProgress(0)
         setTrackDuration(0)
+        setLocalProgress(0)
       } else if (response.status === 401) {
         // Tentar renovar o token antes de desconectar
         const refreshToken = localStorage.getItem("spotify_refresh_token")
@@ -475,6 +511,9 @@ export default function ProfilePage() {
     setCurrentSpotifyTrack(null)
     setIsSpotifyConnected(false)
     setSpotifyError(null)
+    setLocalProgress(0)
+    setIsPlaying(false)
+    setLastUpdateTime(0)
   }
 
   const refreshSpotifyToken = async (refreshToken: string) => {
@@ -1299,14 +1338,14 @@ export default function ProfilePage() {
                     <div className="space-y-1">
                       <div className="w-full bg-white/20 rounded-full h-1">
                         <div
-                          className="bg-white h-1 rounded-full transition-all duration-1000 ease-linear"
+                          className="bg-white h-1 rounded-full transition-all duration-100 ease-linear"
                           style={{
-                            width: trackDuration > 0 ? `${(trackProgress / trackDuration) * 100}%` : "0%",
+                            width: trackDuration > 0 ? `${(localProgress / trackDuration) * 100}%` : "0%",
                           }}
                         ></div>
                       </div>
                       <div className="flex justify-between text-xs text-gray-100 opacity-90">
-                        <span>{formatTime(trackProgress)}</span>
+                        <span>{formatTime(localProgress)}</span>
                         <span>{formatTime(trackDuration)}</span>
                       </div>
                     </div>
