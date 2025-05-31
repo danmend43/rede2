@@ -2169,8 +2169,7 @@ export default function ProfilePage() {
                 <span className="text-lg font-bold text-gray-900">BILIBILI</span>
               </div>
               <p className="text-gray-600 text-sm">
-                A plataforma definitiva para criadores de conteúdo compartilharem suas paixões e se conectarem com suas
-                comunidades.
+                A plataforma do corono
               </p>
             </div>
             <div>
