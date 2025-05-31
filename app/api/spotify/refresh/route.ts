@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       access_token: data.access_token,
-      refresh_token: data.refresh_token || refresh_token,
+      refresh_token: data.refresh_token || refresh_token, // Spotify pode não retornar um novo refresh_token
       expires_in: data.expires_in,
     })
   } catch (error) {
