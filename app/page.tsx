@@ -61,6 +61,8 @@ import {
   LogOut,
 } from "lucide-react"
 
+import { SmartColorExtractor, type VibrantColor } from "@/lib/novalogica-gradiente"
+
 // Substitua o CSS do marquee por este:
 const marqueeStyles = `
   .marquee-container {
@@ -107,223 +109,13 @@ const SpotifyIcon = ({ className }: { className?: string }) => (
   </svg>
 )
 
-// Nova lógica de extração de cores
-interface VibrantColor {
-  r: number
-  g: number
-  b: number
-  saturation: number
-  brightness: number
-  population: number
-  hue: number
-  colorName: string
-}
-
-class SmartColorExtractor {
-  static extractVibrantColors(imageData: ImageData): VibrantColor[] {
-    const width = imageData.width
-    const height = imageData.height
-    const data = imageData.data
-
-    const colorStats = new Map<
-      string,
-      {
-        r: number
-        g: number
-        b: number
-        count: number
-        weight: number
-        isVibrant: boolean
-      }
-    >()
-
-    // Analisar pixel por pixel com amostragem mais eficiente
-    for (let y = 0; y < height; y += 2) {
-      for (let x = 0; x < width; x += 2) {
-        const i = (y * width + x) * 4
-        const r = data[i]
-        const g = data[i + 1]
-        const b = data[i + 2]
-        const alpha = data[i + 3]
-
-        if (alpha < 128) continue
-
-        // Peso baseado na posição (centro e topo têm mais peso)
-        const centerWeight = this.getCenterWeight(x, y, width, height)
-        const topWeight = y < height * 0.3 ? 2 : 1
-
-        const hsv = this.rgbToHsv(r, g, b)
-
-        // Filtros mais precisos para cores vibrantes
-        if (hsv.v < 0.2 || hsv.v > 0.95) continue
-        if (hsv.s < 0.3) continue
-
-        const isVibrant = this.isVibrantColor(r, g, b, hsv)
-        const tolerance = isVibrant ? 8 : 15
-
-        const key = `${Math.floor(r / tolerance)}-${Math.floor(g / tolerance)}-${Math.floor(b / tolerance)}`
-
-        const pixelWeight = centerWeight * topWeight * (isVibrant ? 10 : 1)
-
-        if (colorStats.has(key)) {
-          const existing = colorStats.get(key)!
-          existing.count++
-          existing.weight += pixelWeight
-          const total = existing.count
-          existing.r = Math.round((existing.r * (total - 1) + r) / total)
-          existing.g = Math.round((existing.g * (total - 1) + g) / total)
-          existing.b = Math.round((existing.b * (total - 1) + b) / total)
-          existing.isVibrant = existing.isVibrant || isVibrant
-        } else {
-          colorStats.set(key, {
-            r,
-            g,
-            b,
-            count: 1,
-            weight: pixelWeight,
-            isVibrant,
-          })
-        }
-      }
-    }
-
-    // Converter para array final
-    const candidateColors: VibrantColor[] = []
-
-    for (const color of colorStats.values()) {
-      if (color.count < 5) continue
-
-      const hsv = this.rgbToHsv(color.r, color.g, color.b)
-
-      candidateColors.push({
-        r: color.r,
-        g: color.g,
-        b: color.b,
-        saturation: hsv.s,
-        brightness: hsv.v,
-        hue: hsv.h,
-        population: color.weight,
-        colorName: this.getColorName(hsv.h, hsv.s, color.isVibrant),
-      })
-    }
-
-    // Ordenar por vibração, saturação e peso
-    candidateColors.sort((a, b) => {
-      const aIsVibrant = this.isVibrantColor(a.r, a.g, a.b, { h: a.hue, s: a.saturation, v: a.brightness }) ? 1000 : 0
-      const bIsVibrant = this.isVibrantColor(b.r, b.g, b.b, { h: b.hue, s: b.saturation, v: b.brightness }) ? 1000 : 0
-
-      const scoreA = aIsVibrant + a.saturation * 500 + a.population
-      const scoreB = bIsVibrant + b.saturation * 500 + b.population
-
-      return scoreB - scoreA
-    })
-
-    return candidateColors.slice(0, 8)
-  }
-
-  private static getCenterWeight(x: number, y: number, width: number, height: number): number {
-    const centerX = width / 2
-    const centerY = height / 2
-    const maxDistance = Math.sqrt(centerX * centerX + centerY * centerY)
-    const distance = Math.sqrt((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY))
-    return Math.max(0.5, 1 - (distance / maxDistance) * 0.5)
-  }
-
-  private static isVibrantColor(r: number, g: number, b: number, hsv: { h: number; s: number; v: number }): boolean {
-    // Detecção específica para VERMELHOS VIBRANTES (como rgb(225, 1, 30))
-    const isRedVibrant =
-      ((hsv.h >= 0 && hsv.h <= 15) || (hsv.h >= 345 && hsv.h <= 360)) &&
-      hsv.s > 0.8 &&
-      hsv.v > 0.4 &&
-      r > 150 &&
-      r > g * 3 &&
-      r > b * 3
-
-    // Detecção para VERMELHOS ESCUROS (como rgb(75, 11, 25))
-    const isRedDark =
-      ((hsv.h >= 0 && hsv.h <= 20) || (hsv.h >= 340 && hsv.h <= 360)) &&
-      hsv.s > 0.6 &&
-      hsv.v > 0.2 &&
-      hsv.v < 0.6 &&
-      r > g * 2 &&
-      r > b * 1.5
-
-    // Detecção para ROSAS/MAGENTAS
-    const isRoseHue = (hsv.h >= 300 && hsv.h <= 340) || (hsv.h >= 15 && hsv.h <= 45)
-    const isRoseRGB = r > 120 && r > g && b > 80 && r > b * 0.8
-    const isRose = isRoseHue && isRoseRGB && hsv.s > 0.4 && hsv.v > 0.3
-
-    // Detecção para VERDES VIBRANTES
-    const isGreenHue = hsv.h >= 80 && hsv.h <= 160
-    const isGreenRGB = g > 120 && g > r * 1.2 && g > b * 1.2
-    const isGreen = isGreenHue && isGreenRGB && hsv.s > 0.4 && hsv.v > 0.3
-
-    // Detecção para AZUIS VIBRANTES
-    const isBlueHue = hsv.h >= 200 && hsv.h <= 260
-    const isBlueRGB = b > 120 && b > r * 1.2 && b > g * 1.2
-    const isBlue = isBlueHue && isBlueRGB && hsv.s > 0.4 && hsv.v > 0.3
-
-    // Detecção para AMARELOS/LARANJAS
-    const isYellowOrange = hsv.h >= 45 && hsv.h <= 80 && hsv.s > 0.6 && hsv.v > 0.5
-
-    return isRedVibrant || isRedDark || isRose || isGreen || isBlue || isYellowOrange
-  }
-
-  private static getColorName(hue: number, saturation: number, isVibrant: boolean): string {
-    if (isVibrant) {
-      if ((hue >= 0 && hue <= 15) || (hue >= 345 && hue <= 360)) return "🔴 Vermelho Vibrante"
-      if (hue >= 15 && hue <= 45) return "🧡 Laranja Vibrante"
-      if (hue >= 45 && hue <= 80) return "💛 Amarelo Vibrante"
-      if (hue >= 80 && hue <= 160) return "💚 Verde Vibrante"
-      if (hue >= 160 && hue <= 200) return "💚 Verde Água"
-      if (hue >= 200 && hue <= 260) return "💙 Azul Vibrante"
-      if (hue >= 260 && hue <= 300) return "💜 Roxo Vibrante"
-      if (hue >= 300 && hue <= 345) return "🌸 Rosa Vibrante"
-    }
-
-    if (saturation < 0.3) return "⚪ Neutro"
-    if ((hue >= 0 && hue <= 20) || (hue >= 340 && hue <= 360)) return "❤️ Vermelho"
-    if (hue >= 20 && hue <= 60) return "🧡 Laranja"
-    if (hue >= 60 && hue <= 120) return "💛 Amarelo"
-    if (hue >= 120 && hue <= 180) return "💚 Verde"
-    if (hue >= 180 && hue <= 240) return "💙 Azul"
-    if (hue >= 240 && hue <= 300) return "💜 Roxo"
-    if (hue >= 300 && hue <= 340) return "🌸 Rosa"
-    return "🎨 Cor Única"
-  }
-
-  private static rgbToHsv(r: number, g: number, b: number): { h: number; s: number; v: number } {
-    r /= 255
-    g /= 255
-    b /= 255
-    const max = Math.max(r, g, b)
-    const min = Math.min(r, g, b)
-    const diff = max - min
-    let h = 0
-    const s = max === 0 ? 0 : diff / max
-    const v = max
-
-    if (diff !== 0) {
-      switch (max) {
-        case r:
-          h = ((g - b) / diff + (g < b ? 6 : 0)) / 6
-          break
-        case g:
-          h = ((b - r) / diff + 2) / 6
-          break
-        case b:
-          h = ((r - g) / diff + 4) / 6
-          break
-      }
-    }
-    return { h: h * 360, s, v }
-  }
-}
-
 export default function ProfilePage() {
   // Estados para o gradiente automático
   const [autoGradient, setAutoGradient] = useState<string | null>(null)
   const [dominantColors, setDominantColors] = useState<VibrantColor[]>([])
+
+  // Adicionar um novo estado para o gradiente temporário no modal
+  const [tempAutoGradient, setTempAutoGradient] = useState<string | null>(null)
 
   // Efeito para injetar os estilos CSS do marquee
   useEffect(() => {
@@ -551,7 +343,9 @@ export default function ProfilePage() {
     setEditingWebsite(userProfile.website)
     setTempCoverImage(coverImage)
     setTempAvatarImage(avatarImage)
-  }, [userProfile, coverImage, avatarImage])
+    // Definir gradiente temporário baseado no gradiente atual
+    setTempAutoGradient(autoGradient)
+  }, [userProfile, coverImage, avatarImage, autoGradient])
 
   const fetchSpotifyUser = async (token: string) => {
     try {
@@ -908,6 +702,134 @@ export default function ProfilePage() {
     }
   }
 
+  // Modificar a função handleTempAvatarImageChange para gerar gradiente temporário
+  const handleTempAvatarImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const imageUrl = e.target?.result as string
+        setTempAvatarImage(imageUrl)
+        // Gerar gradiente temporário para o modal
+        extractTempDominantColors(imageUrl)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  // Adicionar função para extrair cores temporárias no modal
+  const extractTempDominantColors = useCallback((imageUrl: string) => {
+    const canvas = document.createElement("canvas")
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    const img = new Image()
+    img.crossOrigin = "anonymous"
+
+    img.onload = () => {
+      // Redimensionar para análise mais rápida
+      const maxSize = 300
+      const ratio = Math.min(maxSize / img.width, maxSize / img.height)
+      const width = img.width * ratio
+      const height = img.height * ratio
+
+      canvas.width = width
+      canvas.height = height
+
+      ctx.drawImage(img, 0, 0, width, height)
+
+      const imageData = ctx.getImageData(0, 0, width, height)
+
+      try {
+        const colors = SmartColorExtractor.extractVibrantColors(imageData)
+        generateTempAutoGradient(colors)
+      } catch (error) {
+        console.error("Erro na extração temporária:", error)
+      }
+    }
+
+    img.src = imageUrl
+  }, [])
+
+  // Adicionar função para gerar gradiente temporário
+  const generateTempAutoGradient = (colors: VibrantColor[]) => {
+    if (colors.length === 0) {
+      setTempAutoGradient("linear-gradient(to bottom left, rgb(59, 130, 246), rgb(139, 92, 246))")
+      return
+    }
+
+    // Usar a mesma lógica do gradiente principal
+    const colorsWithScore = colors.map((color) => {
+      const areaScore = Math.log(color.rawPixelCount + 1) * 20.0
+      const saturationScore = Math.pow(color.saturation, 2) * 15.0
+      const brightnessScore = color.brightness > 0.3 && color.brightness < 0.95 ? 10.0 : -10.0
+      const isHighAreaHighSat = color.rawPixelCount > 1000 && color.saturation > 0.8
+      const megaBoost = isHighAreaHighSat ? 100.0 : 0
+      const isRedVibrant =
+        ((color.hue >= 0 && color.hue <= 30) || (color.hue >= 330 && color.hue <= 360)) && color.saturation > 0.7
+      const redBoost = isRedVibrant ? 30.0 : 0
+      const isPurpleOrPink = color.hue >= 270 && color.hue <= 330 && color.saturation > 0.3
+      const purpleBoost = isPurpleOrPink ? 80.0 : 0
+      const isVibriantBlue = color.hue >= 180 && color.hue <= 270 && color.saturation > 0.15
+      const blueBoost = isVibriantBlue ? 40.0 : 0
+      const isGoodBlue = color.hue >= 200 && color.hue <= 240 && color.saturation > 0.25 && color.brightness > 0.3
+      const goodBlueBoost = isGoodBlue ? 25.0 : 0
+      const lowAreaPenalty = color.rawPixelCount < 100 ? -50.0 : 0
+      const neutralPenalty = color.saturation < 0.5 ? -30.0 : 0
+      const tooLightPenalty = color.brightness > 0.9 && color.saturation < 0.15 ? -80.0 : 0
+
+      const finalScore =
+        areaScore +
+        saturationScore +
+        brightnessScore +
+        megaBoost +
+        redBoost +
+        purpleBoost +
+        blueBoost +
+        goodBlueBoost +
+        lowAreaPenalty +
+        neutralPenalty +
+        tooLightPenalty
+
+      return {
+        ...color,
+        score: finalScore,
+      }
+    })
+
+    colorsWithScore.sort((a, b) => b.score - a.score)
+
+    const primaryColor = colorsWithScore[0]
+
+    let secondaryColor = null
+    for (let i = 1; i < colorsWithScore.length; i++) {
+      const candidate = colorsWithScore[i]
+      const colorDiff =
+        Math.abs(primaryColor.r - candidate.r) +
+        Math.abs(primaryColor.g - candidate.g) +
+        Math.abs(primaryColor.b - candidate.b)
+      const hueDiff = Math.min(
+        Math.abs(primaryColor.hue - candidate.hue),
+        360 - Math.abs(primaryColor.hue - candidate.hue),
+      )
+
+      if ((hueDiff > 60 || colorDiff > 100) && candidate.saturation > 0.4 && candidate.rawPixelCount > 50) {
+        secondaryColor = candidate
+        break
+      }
+    }
+
+    if (!secondaryColor) {
+      secondaryColor = colorsWithScore[1] || primaryColor
+    }
+
+    const lightPrimary = `rgb(${Math.round(primaryColor.r * 0.8)}, ${Math.round(primaryColor.g * 0.8)}, ${Math.round(primaryColor.b * 0.8)})`
+    const darkSecondary = `rgb(${Math.round(secondaryColor.r * 0.4)}, ${Math.round(secondaryColor.g * 0.4)}, ${Math.round(secondaryColor.b * 0.4)})`
+
+    const gradient = `linear-gradient(to bottom left, ${lightPrimary}, ${darkSecondary})`
+    setTempAutoGradient(gradient)
+  }
+
   const handleTempCoverImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
@@ -915,17 +837,8 @@ export default function ProfilePage() {
       reader.onload = (e) => {
         setTempCoverImage(e.target?.result as string)
         setTempCoverRemoved(false)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  const handleTempAvatarImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setTempAvatarImage(e.target?.result as string)
+        // Limpar gradiente temporário quando uma imagem de capa for escolhida
+        setTempAutoGradient(null)
       }
       reader.readAsDataURL(file)
     }
@@ -1050,8 +963,8 @@ export default function ProfilePage() {
     setShowEditProfileModal(false)
   }
 
+  // Modificar handleCancelEdit para restaurar o gradiente temporário
   const handleCancelEdit = () => {
-    // Restaurar os valores originais
     setEditingName(userProfile.name)
     setEditingBio(userProfile.bio)
     setEditingLocation(userProfile.location)
@@ -1059,6 +972,7 @@ export default function ProfilePage() {
     setTempCoverImage(coverImage)
     setTempAvatarImage(avatarImage)
     setTempCoverRemoved(false)
+    setTempAutoGradient(autoGradient)
     setShowEditProfileModal(false)
   }
 
@@ -1153,8 +1067,47 @@ export default function ProfilePage() {
       return
     }
 
-    const primaryColor = colors[0]
-    const secondaryColor = colors[1] || primaryColor
+    // Calcular scores para cada cor baseado na área, saturação e brilho
+    const colorsWithScore = colors.map((color) => {
+      // Área: Peso logarítmico para área (pixels)
+      const areaScore = Math.log(color.rawPixelCount + 1) * 20.0
+
+      // Saturação: Peso exponencial para saturação
+      const saturationScore = Math.pow(color.saturation, 2) * 15.0
+
+      // Brilho: Evitar muito escuro/claro
+      const brightnessScore = color.brightness > 0.3 && color.brightness < 0.95 ? 10.0 : -10.0
+
+      // BOOST para cores com muita área + alta saturação
+      const isHighAreaHighSat = color.rawPixelCount > 1000 && color.saturation > 0.8
+      const megaBoost = isHighAreaHighSat ? 100.0 : 0
+
+      // BOOST para cores vermelhas/vibrantes específicas
+      const isRedVibrant =
+        ((color.hue >= 0 && color.hue <= 30) || (color.hue >= 330 && color.hue <= 360)) && color.saturation > 0.7
+      const redBoost = isRedVibrant ? 30.0 : 0
+
+      // BOOST para roxos/rosas/magentas
+      const isPurpleOrPink = color.hue >= 270 && color.hue <= 330 && color.saturation > 0.3
+      const purpleBoost = isPurpleOrPink ? 80.0 : 0
+
+      // BOOST para azuis saturados
+      const isVibriantBlue = color.hue >= 180 && color.hue <= 270 && color.saturation > 0.15
+      const blueBoost = isVibriantBlue ? 40.0 : 0
+
+      const finalScore = areaScore + saturationScore + brightnessScore + megaBoost + redBoost + purpleBoost + blueBoost
+
+      return {
+        ...color,
+        score: finalScore,
+      }
+    })
+
+    // Ordenar por score
+    colorsWithScore.sort((a, b) => b.score - a.score)
+
+    const primaryColor = colorsWithScore[0]
+    const secondaryColor = colorsWithScore[1] || primaryColor
 
     // Criar versões mais escuras para o gradiente
     const darkPrimary = `rgb(${Math.round(primaryColor.r * 0.4)}, ${Math.round(primaryColor.g * 0.4)}, ${Math.round(primaryColor.b * 0.4)})`
@@ -1171,8 +1124,94 @@ export default function ProfilePage() {
       return
     }
 
-    const primaryColor = colors[0]
-    const secondaryColor = colors[1] || primaryColor
+    // Calcular scores para cada cor baseado na área, saturação e brilho
+    const colorsWithScore = colors.map((color) => {
+      // Área: Peso logarítmico para área (pixels)
+      const areaScore = Math.log(color.rawPixelCount + 1) * 20.0
+
+      // Saturação: Peso exponencial para saturação
+      const saturationScore = Math.pow(color.saturation, 2) * 15.0
+
+      // Brilho: Evitar muito escuro/claro
+      const brightnessScore = color.brightness > 0.3 && color.brightness < 0.95 ? 10.0 : -10.0
+
+      // BOOST para cores com muita área + alta saturação
+      const isHighAreaHighSat = color.rawPixelCount > 1000 && color.saturation > 0.8
+      const megaBoost = isHighAreaHighSat ? 100.0 : 0
+
+      // BOOST para cores vermelhas/vibrantes específicas
+      const isRedVibrant =
+        ((color.hue >= 0 && color.hue <= 30) || (color.hue >= 330 && color.hue <= 360)) && color.saturation > 0.7
+      const redBoost = isRedVibrant ? 30.0 : 0
+
+      // BOOST para roxos/rosas/magentas
+      const isPurpleOrPink = color.hue >= 270 && color.hue <= 330 && color.saturation > 0.3
+      const purpleBoost = isPurpleOrPink ? 80.0 : 0
+
+      // BOOST para azuis saturados
+      const isVibriantBlue = color.hue >= 180 && color.hue <= 270 && color.saturation > 0.15
+      const blueBoost = isVibriantBlue ? 40.0 : 0
+
+      // BOOST extra para azuis com boa saturação
+      const isGoodBlue = color.hue >= 200 && color.hue <= 240 && color.saturation > 0.25 && color.brightness > 0.3
+      const goodBlueBoost = isGoodBlue ? 25.0 : 0
+
+      // Penalidades
+      const lowAreaPenalty = color.rawPixelCount < 100 ? -50.0 : 0
+      const neutralPenalty = color.saturation < 0.5 ? -30.0 : 0
+      const tooLightPenalty = color.brightness > 0.9 && color.saturation < 0.15 ? -80.0 : 0
+
+      const finalScore =
+        areaScore +
+        saturationScore +
+        brightnessScore +
+        megaBoost +
+        redBoost +
+        purpleBoost +
+        blueBoost +
+        goodBlueBoost +
+        lowAreaPenalty +
+        neutralPenalty +
+        tooLightPenalty
+
+      return {
+        ...color,
+        score: finalScore,
+      }
+    })
+
+    // Ordenar por score
+    colorsWithScore.sort((a, b) => b.score - a.score)
+
+    const primaryColor = colorsWithScore[0]
+
+    // Encontrar uma segunda cor que seja suficientemente diferente
+    let secondaryColor = null
+    for (let i = 1; i < colorsWithScore.length; i++) {
+      const candidate = colorsWithScore[i]
+
+      // Verificar diferença de cor
+      const colorDiff =
+        Math.abs(primaryColor.r - candidate.r) +
+        Math.abs(primaryColor.g - candidate.g) +
+        Math.abs(primaryColor.b - candidate.b)
+
+      const hueDiff = Math.min(
+        Math.abs(primaryColor.hue - candidate.hue),
+        360 - Math.abs(primaryColor.hue - candidate.hue),
+      )
+
+      // Critérios para segunda cor
+      if ((hueDiff > 60 || colorDiff > 100) && candidate.saturation > 0.4 && candidate.rawPixelCount > 50) {
+        secondaryColor = candidate
+        break
+      }
+    }
+
+    // Fallback se não encontrar uma segunda cor adequada
+    if (!secondaryColor) {
+      secondaryColor = colorsWithScore[1] || primaryColor
+    }
 
     // Criar versões mais escuras para o gradiente
     const lightPrimary = `rgb(${Math.round(primaryColor.r * 0.8)}, ${Math.round(primaryColor.g * 0.8)}, ${Math.round(primaryColor.b * 0.8)})`
@@ -2083,68 +2122,45 @@ export default function ProfilePage() {
                                           <div
                                             className="absolute inset-0 bg-black/20 flex items-center justify-center cursor-pointer"
                                             onClick={() => post.youtubeUrl && openYouTubeModal(post.youtubeUrl, post)}
-                                          >
-                                            <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors shadow-lg">
-                                              <Play className="w-5 h-5 text-white ml-0.5" />
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ) : post.type === "video" ? (
-                                        <div className="relative h-full">
-                                          <img
-                                            src={post.thumbnail || "/placeholder.svg"}
-                                            alt="Video thumbnail"
-                                            className="w-full h-full object-cover cursor-pointer"
                                           />
-                                          <div className="absolute inset-0 bg-black/20 flex items-center justify-center cursor-pointer">
-                                            <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors shadow-lg">
-                                              <Play className="w-5 h-5 text-white ml-0.5" />
+                                          {post.duration && (
+                                            <div className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 py-0.5 rounded">
+                                              {post.duration}
                                             </div>
-                                          </div>
+                                          )}
                                         </div>
                                       ) : (
                                         <img
                                           src={post.thumbnail || "/placeholder.svg"}
                                           alt="Post media"
-                                          className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                          className="w-full h-full object-cover"
                                         />
-                                      )}
-                                      {post.duration && (
-                                        <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
-                                          {post.duration}
-                                        </div>
                                       )}
                                     </div>
                                   </div>
                                 )}
                               </div>
 
-                              {/* Ações do Post - Movidas para baixo */}
-                              <div className="flex items-center gap-6 pt-4 border-t border-gray-100 mt-4">
-                                <button className="flex items-center gap-2 text-gray-500 hover:text-red-500 transition-colors group">
-                                  <div className="p-2 rounded-full group-hover:bg-red-50 transition-colors">
-                                    <Heart className="w-4 h-4" />
-                                  </div>
-                                  <span className="text-sm font-medium">{formatNumber(post.stats.likes)}</span>
-                                </button>
-                                <button className="flex items-center gap-2 text-gray-500 hover:text-blue-500 transition-colors group">
-                                  <div className="p-2 rounded-full group-hover:bg-blue-50 transition-colors">
-                                    <MessageCircle className="w-4 h-4" />
-                                  </div>
-                                  <span className="text-sm font-medium">{formatNumber(post.stats.comments)}</span>
-                                </button>
-                                <button className="flex items-center gap-2 text-gray-500 hover:text-green-500 transition-colors group">
-                                  <div className="p-2 rounded-full group-hover:bg-green-50 transition-colors">
-                                    <Share className="w-4 h-4" />
-                                  </div>
-                                  <span className="text-sm font-medium">{formatNumber(post.stats.shares)}</span>
-                                </button>
+                              {/* Ações do Post */}
+                              <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                                <div className="flex items-center gap-6">
+                                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-red-600">
+                                    <Heart className="w-4 h-4 mr-1" />
+                                    {formatNumber(post.stats.likes)}
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600">
+                                    <MessageCircle className="w-4 h-4 mr-1" />
+                                    {formatNumber(post.stats.comments)}
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-green-600">
+                                    <Share className="w-4 h-4 mr-1" />
+                                    {formatNumber(post.stats.shares)}
+                                  </Button>
+                                </div>
                                 {post.stats.views !== undefined && (
-                                  <div className="flex items-center gap-2 text-gray-500">
-                                    <div className="p-2 rounded-full">
-                                      <Eye className="w-4 h-4" />
-                                    </div>
-                                    <span className="text-sm font-medium">{formatNumber(post.stats.views)}</span>
+                                  <div className="flex items-center gap-1 text-sm text-gray-500">
+                                    <Eye className="w-4 h-4" />
+                                    {formatNumber(post.stats.views)} visualizações
                                   </div>
                                 )}
                               </div>
@@ -2155,10 +2171,15 @@ export default function ProfilePage() {
                     )}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-96 text-gray-500">
-                    <Play className="w-16 h-16 mb-4 text-gray-300" />
-                    <h3 className="text-lg font-medium mb-2">Nenhum post ainda</h3>
-                    <p className="text-sm text-center">Quando você criar posts, eles aparecerão aqui.</p>
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                      <Upload className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum post ainda</h3>
+                    <p className="text-gray-600 mb-6 max-w-md">
+                      Compartilhe seus pensamentos, fotos, vídeos ou links para começar a criar seu perfil.
+                    </p>
+                    <Button onClick={() => setShowCreatePostModal(true)}>Criar Post</Button>
                   </div>
                 )}
               </div>
@@ -2167,44 +2188,44 @@ export default function ProfilePage() {
             {/* Videos Tab */}
             <TabsContent value="videos">
               <div className="min-h-[400px]">
-                {userPosts.filter((post) => post.type === "video" || post.type === "youtube").length > 0 ? (
+                {userPosts.filter((post) => post.type === "youtube" || post.type === "video").length > 0 ? (
                   <div
                     className={
                       viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-6"
                     }
                   >
                     {userPosts
-                      .filter((post) => post.type === "video" || post.type === "youtube")
-                      .map((video) =>
+                      .filter((post) => post.type === "youtube" || post.type === "video")
+                      .map((post) =>
                         viewMode === "grid" ? (
-                          // Grid View
+                          // Grid View - Card Style
                           <Card
-                            key={video.id}
+                            key={post.id}
                             className="overflow-hidden hover:shadow-lg transition-all duration-300 border-gray-100 transform hover:scale-105 cursor-pointer"
                             onClick={() => {
-                              if (video.type === "youtube" && video.youtubeUrl) {
-                                openYouTubeModal(video.youtubeUrl, video)
+                              if (post.type === "youtube" && post.youtubeUrl) {
+                                openYouTubeModal(post.youtubeUrl, post)
                               }
                             }}
                           >
                             <div className="relative">
                               <img
-                                src={video.thumbnail || "/placeholder.svg"}
-                                alt={video.content}
-                                className="w-full object-cover h-40"
+                                src={post.thumbnail || "/placeholder.svg?height=192&width=320"}
+                                alt={post.content}
+                                className="w-full object-cover h-48"
                               />
                               <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                                 <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors">
                                   <Play className="w-6 h-6 text-white ml-0.5" />
                                 </div>
                               </div>
-                              {video.duration && (
+                              {post.duration && (
                                 <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
-                                  {video.duration}
+                                  {post.duration}
                                 </div>
                               )}
-                              <Badge className={`absolute top-2 left-2 ${getCategoryColor(video.category)}`}>
-                                {video.category}
+                              <Badge className={`absolute top-2 left-2 ${getCategoryColor(post.category)}`}>
+                                {post.category}
                               </Badge>
                             </div>
                             <CardContent className="p-4">
@@ -2212,25 +2233,33 @@ export default function ProfilePage() {
                                 {/* Author Info */}
                                 <div className="flex items-center gap-2">
                                   <Avatar className="w-6 h-6">
-                                    <AvatarImage src={video.author?.avatar || avatarImage || "/placeholder.svg"} />
-                                    <AvatarFallback className="text-xs">
-                                      {video.author?.name?.[0] || "U"}
-                                    </AvatarFallback>
+                                    <AvatarImage src={post.author?.avatar || avatarImage || "/placeholder.svg"} />
+                                    <AvatarFallback className="text-xs">{post.author?.name?.[0] || "U"}</AvatarFallback>
                                   </Avatar>
                                   <span className="text-sm font-medium text-gray-700">
-                                    {video.author?.name || userProfile.name}
+                                    {post.author?.name || userProfile.name}
                                   </span>
-                                  {video.author?.verified && <Verified className="w-3 h-3 text-blue-500" />}
+                                  {post.author?.verified && <Verified className="w-3 h-3 text-blue-500" />}
                                 </div>
 
-                                <p className="text-sm text-gray-900 line-clamp-2 leading-relaxed">{video.content}</p>
+                                <p className="text-sm text-gray-900 line-clamp-3 leading-relaxed">{post.content}</p>
 
-                                <div className="flex items-center justify-between text-xs text-gray-500">
-                                  <div className="flex items-center gap-3">
-                                    <span>{formatNumber(video.stats.views || 0)} views</span>
-                                    <span>{formatNumber(video.stats.likes)} likes</span>
+                                <div className="flex items-center justify-between text-sm text-gray-500">
+                                  <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-1">
+                                      <Eye className="w-4 h-4" />
+                                      {formatNumber(post.stats.views || 0)}
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <Heart className="w-4 h-4" />
+                                      {formatNumber(post.stats.likes)}
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <MessageCircle className="w-4 h-4" />
+                                      {formatNumber(post.stats.comments)}
+                                    </div>
                                   </div>
-                                  <span>{video.timestamp}</span>
+                                  <span>{post.timestamp}</span>
                                 </div>
                               </div>
                             </CardContent>
@@ -2238,102 +2267,82 @@ export default function ProfilePage() {
                         ) : (
                           // List View
                           <Card
-                            key={video.id}
+                            key={post.id}
                             className="overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 rounded-2xl bg-white transform hover:scale-[1.02]"
                           >
                             <CardContent className="p-6">
-                              {/* Header do Vídeo */}
+                              {/* Header do Post */}
                               <div className="flex gap-4 mb-4">
                                 <Avatar className="w-12 h-12 ring-2 ring-gray-100">
-                                  <AvatarImage src={video.author?.avatar || avatarImage || "/placeholder.svg"} />
-                                  <AvatarFallback>{video.author?.name?.[0] || "U"}</AvatarFallback>
+                                  <AvatarImage src={post.author?.avatar || avatarImage || "/placeholder.svg"} />
+                                  <AvatarFallback>{post.author?.name?.[0] || "U"}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-1">
                                     <span className="font-semibold text-gray-900">
-                                      {video.author?.name || userProfile.name}
+                                      {post.author?.name || userProfile.name}
                                     </span>
-                                    {video.author?.verified && <Verified className="w-4 h-4 text-blue-500" />}
+                                    {post.author?.verified && <Verified className="w-4 h-4 text-blue-500" />}
                                     <span className="text-gray-500 text-sm">
-                                      {video.author?.username || userProfile.username}
+                                      {post.author?.username || userProfile.username}
                                     </span>
                                     <span className="text-gray-400">·</span>
-                                    <span className="text-gray-500 text-sm">{video.timestamp}</span>
+                                    <span className="text-gray-500 text-sm">{post.timestamp}</span>
                                   </div>
-                                  <Badge className={`w-fit ${getCategoryColor(video.category)}`}>
-                                    {video.category}
-                                  </Badge>
+                                  <Badge className={`w-fit ${getCategoryColor(post.category)}`}>{post.category}</Badge>
                                 </div>
                                 <Button variant="ghost" size="sm" className="text-gray-400 hover:text-gray-600">
                                   <MoreHorizontal className="w-4 h-4" />
                                 </Button>
                               </div>
 
+                              {/* Conteúdo do Post */}
                               <div className="space-y-4">
-                                <div className="flex gap-6">
-                                  <div className="flex-1">
-                                    <p className="text-gray-900 leading-relaxed text-base">{video.content}</p>
-                                  </div>
+                                <p className="text-gray-900 leading-relaxed text-base">{post.content}</p>
 
-                                  {video.thumbnail && (
-                                    <div className="w-48 flex-shrink-0">
-                                      <div className="relative rounded-xl overflow-hidden shadow-md h-32 bg-gray-100">
-                                        <img
-                                          src={video.thumbnail || "/placeholder.svg"}
-                                          alt="Video thumbnail"
-                                          className="w-full h-full object-cover cursor-pointer"
-                                          onClick={() => {
-                                            if (video.type === "youtube" && video.youtubeUrl) {
-                                              openYouTubeModal(video.youtubeUrl, video)
-                                            }
-                                          }}
-                                        />
-                                        <div
-                                          className="absolute inset-0 bg-black/20 flex items-center justify-center cursor-pointer"
-                                          onClick={() => {
-                                            if (video.type === "youtube" && video.youtubeUrl) {
-                                              openYouTubeModal(video.youtubeUrl, video)
-                                            }
-                                          }}
-                                        >
-                                          <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors shadow-lg">
-                                            <Play className="w-5 h-5 text-white ml-0.5" />
-                                          </div>
-                                        </div>
-                                        {video.duration && (
-                                          <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
-                                            {video.duration}
-                                          </div>
-                                        )}
+                                {/* Miniatura do vídeo */}
+                                {post.thumbnail && (
+                                  <div className="relative rounded-xl overflow-hidden shadow-md h-64 bg-gray-100">
+                                    <img
+                                      src={post.thumbnail || "/placeholder.svg"}
+                                      alt="Video thumbnail"
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <div
+                                      className="absolute inset-0 bg-black/20 flex items-center justify-center cursor-pointer"
+                                      onClick={() => post.youtubeUrl && openYouTubeModal(post.youtubeUrl, post)}
+                                    >
+                                      <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors">
+                                        <Play className="w-8 h-8 text-white ml-0.5" />
                                       </div>
                                     </div>
-                                  )}
-                                </div>
+                                    {post.duration && (
+                                      <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
+                                        {post.duration}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
 
-                                <div className="flex items-center gap-6 pt-4 border-t border-gray-100 mt-4">
-                                  <button className="flex items-center gap-2 text-gray-500 hover:text-red-500 transition-colors group">
-                                    <div className="p-2 rounded-full group-hover:bg-red-50 transition-colors">
-                                      <Heart className="w-4 h-4" />
-                                    </div>
-                                    <span className="text-sm font-medium">{formatNumber(video.stats.likes)}</span>
-                                  </button>
-                                  <button className="flex items-center gap-2 text-gray-500 hover:text-blue-500 transition-colors group">
-                                    <div className="p-2 rounded-full group-hover:bg-blue-50 transition-colors">
-                                      <MessageCircle className="w-4 h-4" />
-                                    </div>
-                                    <span className="text-sm font-medium">{formatNumber(video.stats.comments)}</span>
-                                  </button>
-                                  <button className="flex items-center gap-2 text-gray-500 hover:text-green-500 transition-colors group">
-                                    <div className="p-2 rounded-full group-hover:bg-green-50 transition-colors">
-                                      <Share className="w-4 h-4" />
-                                    </div>
-                                    <span className="text-sm font-medium">{formatNumber(video.stats.shares)}</span>
-                                  </button>
-                                  <div className="flex items-center gap-2 text-gray-500">
-                                    <div className="p-2 rounded-full">
-                                      <Eye className="w-4 h-4" />
-                                    </div>
-                                    <span className="text-sm font-medium">{formatNumber(video.stats.views || 0)}</span>
+                                {/* Ações do Post */}
+                                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                                  <div className="flex items-center gap-6">
+                                    <Button variant="ghost" size="sm" className="text-gray-600 hover:text-red-600">
+                                      <Heart className="w-4 h-4 mr-1" />
+                                      {formatNumber(post.stats.likes)}
+                                    </Button>
+                                    <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600">
+                                      <MessageCircle className="w-4 h-4 mr-1" />
+                                      {formatNumber(post.stats.comments)}
+                                    </Button>
+                                    <Button variant="ghost" size="sm" className="text-gray-600 hover:text-green-600">
+                                      <Share className="w-4 h-4 mr-1" />
+                                      {formatNumber(post.stats.shares)}
+                                    </Button>
+                                  </div>
+                                  <div className="flex items-center gap-1 text-sm text-gray-500">
+                                    <Eye className="w-4 h-4" />
+                                    {formatNumber(post.stats.views || 0)} visualizações
                                   </div>
                                 </div>
                               </div>
@@ -2343,10 +2352,15 @@ export default function ProfilePage() {
                       )}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-96 text-gray-500">
-                    <Play className="w-16 h-16 mb-4 text-gray-300" />
-                    <h3 className="text-lg font-medium mb-2">Nenhum vídeo ainda</h3>
-                    <p className="text-sm text-center">Quando você postar vídeos, eles aparecerão aqui.</p>
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                      <Play className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum vídeo ainda</h3>
+                    <p className="text-gray-600 mb-6 max-w-md">
+                      Compartilhe seus vídeos ou links do YouTube para começar a criar sua biblioteca de vídeos.
+                    </p>
+                    <Button onClick={() => setShowCreatePostModal(true)}>Adicionar Vídeo</Button>
                   </div>
                 )}
               </div>
@@ -2357,34 +2371,18 @@ export default function ProfilePage() {
               <div className="min-h-[400px]">
                 {collections.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {collections.map((collection) => (
-                      <Card key={collection.id} className="overflow-hidden hover:shadow-lg transition-all duration-300">
-                        <div className="relative">
-                          <img
-                            src={collection.thumbnail || "/placeholder.svg"}
-                            alt={collection.name}
-                            className="w-full h-40 object-cover"
-                          />
-                          <div className="absolute top-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
-                            {collection.itemCount} itens
-                          </div>
-                        </div>
-                        <CardContent className="p-4">
-                          <h3 className="font-semibold text-gray-900 mb-2">{collection.name}</h3>
-                          <p className="text-sm text-gray-600 mb-3">{collection.description}</p>
-                          <div className="flex items-center justify-between text-sm text-gray-500">
-                            <span>Criada em {collection.createdAt}</span>
-                            <span>{collection.visibility}</span>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                    {/* Collections would go here */}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-96 text-gray-500">
-                    <Star className="w-16 h-16 mb-4 text-gray-300" />
-                    <h3 className="text-lg font-medium mb-2">Nenhuma coleção ainda</h3>
-                    <p className="text-sm text-center">Organize seus posts favoritos em coleções personalizadas.</p>
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                      <Grid3X3 className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma coleção ainda</h3>
+                    <p className="text-gray-600 mb-6 max-w-md">
+                      Crie coleções para organizar seus posts e vídeos favoritos por temas ou categorias.
+                    </p>
+                    <Button>Criar Coleção</Button>
                   </div>
                 )}
               </div>
@@ -2395,34 +2393,18 @@ export default function ProfilePage() {
               <div className="min-h-[400px]">
                 {achievements.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {achievements.map((achievement) => (
-                      <Card
-                        key={achievement.id}
-                        className={`overflow-hidden transition-all duration-300 ${getRarityColor(achievement.rarity)} ${getRarityGlow(achievement.rarity)} shadow-lg`}
-                      >
-                        <CardContent className="p-6 text-center">
-                          <div className="mb-4">
-                            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-3">
-                              <Trophy className="w-8 h-8 text-white" />
-                            </div>
-                            <h3 className="font-bold text-gray-900 mb-2">{achievement.name}</h3>
-                            <p className="text-sm text-gray-600 mb-3">{achievement.description}</p>
-                            <Badge className={`${getCategoryColor(achievement.rarity)} capitalize`}>
-                              {achievement.rarity}
-                            </Badge>
-                          </div>
-                          <div className="text-xs text-gray-500">Conquistada em {achievement.unlockedAt}</div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                    {/* Achievements would go here */}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-96 text-gray-500">
-                    <Trophy className="w-16 h-16 mb-4 text-gray-300" />
-                    <h3 className="text-lg font-medium mb-2">Nenhuma conquista ainda</h3>
-                    <p className="text-sm text-center">
-                      Continue criando conteúdo para desbloquear conquistas incríveis!
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                      <Trophy className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma conquista ainda</h3>
+                    <p className="text-gray-600 mb-6 max-w-md">
+                      Continue interagindo na plataforma para desbloquear conquistas e mostrar suas realizações.
                     </p>
+                    <Button>Ver Conquistas Disponíveis</Button>
                   </div>
                 )}
               </div>
@@ -2431,92 +2413,83 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <canvas ref={colorAnalysisCanvasRef} className="hidden" />
-
       {/* Footer */}
-      <footer className="bg-gray-50 border-t border-gray-200 mt-16">
-        <div className="max-w-6xl mx-auto px-6 py-12">
+      <footer className="bg-gray-50 border-t border-gray-100 py-8">
+        <div className="max-w-6xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-sm">B</span>
                 </div>
                 <span className="text-xl font-bold text-gray-900">BILIBILI</span>
               </div>
-              <p className="text-gray-600 text-sm">
-                A plataforma legal :D
+              <p className="text-gray-600 text-sm mb-4">
+                Uma plataforma do corono
               </p>
-              <div className="flex gap-3">
-                <button className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors">
-                  <Youtube className="w-4 h-4 text-gray-600" />
-                </button>
-                <button className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors">
-                  <Music className="w-4 h-4 text-gray-600" />
-                </button>
-                <button className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors">
-                  <MessageCircle className="w-4 h-4 text-gray-600" />
-                </button>
+              <div className="flex items-center gap-4">
+                <a href="#" className="text-gray-500 hover:text-gray-900">
+                  <Youtube className="w-5 h-5" />
+                </a>
+                <a href="#" className="text-gray-500 hover:text-gray-900">
+                  <Music className="w-5 h-5" />
+                </a>
+                <a href="#" className="text-gray-500 hover:text-gray-900">
+                  <MessageCircle className="w-5 h-5" />
+                </a>
+                <a href="#" className="text-gray-500 hover:text-gray-900">
+                  <Share className="w-5 h-5" />
+                </a>
               </div>
             </div>
 
             <div>
               <h3 className="font-semibold text-gray-900 mb-4">Plataforma</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
+              <ul className="space-y-2 text-sm">
                 <li>
-                  <a href="#" className="hover:text-gray-900 transition-colors">
-                    Início
+                  <a href="#" className="text-gray-600 hover:text-blue-600">
+                    Sobre nós
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-gray-900 transition-colors">
-                    Explorar
+                  <a href="#" className="text-gray-600 hover:text-blue-600">
+                    Carreiras
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-gray-900 transition-colors">
-                    Trending
+                  <a href="#" className="text-gray-600 hover:text-blue-600">
+                    Imprensa
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-gray-900 transition-colors">
-                    Comunidade
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-gray-900 transition-colors">
-                    Criador Studio
+                  <a href="#" className="text-gray-600 hover:text-blue-600">
+                    Blog
                   </a>
                 </li>
               </ul>
             </div>
 
             <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Recursos</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
+              <h3 className="font-semibold text-gray-900 mb-4">Comunidade</h3>
+              <ul className="space-y-2 text-sm">
                 <li>
-                  <a href="#" className="hover:text-gray-900 transition-colors">
-                    Analytics
+                  <a href="#" className="text-gray-600 hover:text-blue-600">
+                    Criadores
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-gray-900 transition-colors">
-                    Monetização
+                  <a href="#" className="text-gray-600 hover:text-blue-600">
+                    Fórum
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-gray-900 transition-colors">
-                    API
+                  <a href="#" className="text-gray-600 hover:text-blue-600">
+                    Eventos
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-gray-900 transition-colors">
-                    Parcerias
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-gray-900 transition-colors">
-                    Desenvolvedores
+                  <a href="#" className="text-gray-600 hover:text-blue-600">
+                    Programa de Parceiros
                   </a>
                 </li>
               </ul>
@@ -2524,30 +2497,25 @@ export default function ProfilePage() {
 
             <div>
               <h3 className="font-semibold text-gray-900 mb-4">Suporte</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
+              <ul className="space-y-2 text-sm">
                 <li>
-                  <a href="#" className="hover:text-gray-900 transition-colors">
-                    Central de Ajuda
+                  <a href="#" className="text-gray-600 hover:text-blue-600">
+                    Ajuda
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-gray-900 transition-colors">
-                    Contato
+                  <a href="#" className="text-gray-600 hover:text-blue-600">
+                    Termos de Serviço
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-gray-900 transition-colors">
-                    Termos de Uso
+                  <a href="#" className="text-gray-600 hover:text-blue-600">
+                    Política de Privacidade
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-gray-900 transition-colors">
-                    Privacidade
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-gray-900 transition-colors">
-                    Cookies
+                  <a href="#" className="text-gray-600 hover:text-blue-600">
+                    Diretrizes da Comunidade
                   </a>
                 </li>
               </ul>
@@ -2555,7 +2523,18 @@ export default function ProfilePage() {
           </div>
 
           <div className="border-t border-gray-200 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-sm text-gray-500">© 2024 BILIBILI. Todos os direitos reservados.</p>
+            <p className="text-gray-600 text-sm">© 2023 BILIBILI. Todos os direitos reservados.</p>
+            <div className="flex items-center gap-4 mt-4 md:mt-0">
+              <a href="#" className="text-gray-600 hover:text-blue-600 text-sm">
+                Português (Brasil)
+              </a>
+              <a href="#" className="text-gray-600 hover:text-blue-600 text-sm">
+                Acessibilidade
+              </a>
+              <a href="#" className="text-gray-600 hover:text-blue-600 text-sm">
+                Cookies
+              </a>
+            </div>
           </div>
         </div>
       </footer>
@@ -2563,302 +2542,243 @@ export default function ProfilePage() {
       {/* Create Post Modal */}
       {showCreatePostModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-xl overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold">Criar novo post</h3>
+          <Card className="w-full max-w-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <h2 className="text-xl font-semibold text-gray-900">Criar Post</h2>
               <Button variant="ghost" size="sm" onClick={() => setShowCreatePostModal(false)}>
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </Button>
             </div>
-            <div className="p-4 space-y-4">
-              <div>
-                <textarea
-                  className="w-full border rounded-lg p-3 min-h-[120px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="O que você está pensando?"
-                  value={newPostContent}
-                  onChange={(e) => {
-                    if (e.target.value.length <= 500) {
-                      setNewPostContent(e.target.value)
-                    }
-                  }}
-                  maxLength={500}
-                ></textarea>
-                <div className="text-right text-xs text-gray-500 mt-1">{newPostContent.length}/500 caracteres</div>
-              </div>
-
-              {/* Preview de mídia */}
-              {newPostMedia && (
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border">
-                  <div className="w-16 h-12 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
-                    {newPostMediaType === "image" ? (
-                      <img
-                        src={newPostMedia || "/placeholder.svg"}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : newPostMediaType === "video" ? (
-                      <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                        <Play className="w-4 h-4 text-white" />
-                      </div>
-                    ) : newPostMediaType === "youtube" ? (
-                      <img
-                        src={newPostMedia || "/placeholder.svg"}
-                        alt="YouTube thumbnail"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : null}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {newPostMediaType === "image" && "Imagem anexada"}
-                      {newPostMediaType === "video" && "Vídeo anexado"}
-                      {newPostMediaType === "youtube" &&
-                        (extractYouTubeId(newPostYoutubeUrl)
-                          ? `Vídeo: ${
-                              newPostYoutubeUrl.includes("v=")
-                                ? decodeURIComponent(newPostYoutubeUrl.split("v=")[1].split("&")[0])
-                                : "Vídeo do YouTube"
-                            }`
-                          : "Vídeo do YouTube anexado")}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <button
-                        onClick={() => {
-                          // Lógica para editar mídia
-                          if (newPostMediaType === "youtube") {
-                            setShowYoutubeInput(true)
-                          } else {
-                            postMediaInputRef.current?.click()
-                          }
-                        }}
-                        className="text-xs text-blue-600 hover:text-blue-800"
+            <CardContent className="p-6">
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <Avatar className="w-10 h-10">
+                    <AvatarImage src={avatarImage || "/placeholder.svg"} />
+                    <AvatarFallback></AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="font-medium text-gray-900">{userProfile.name}</div>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={newPostCategory}
+                        onChange={(e) => setNewPostCategory(e.target.value)}
+                        className="text-xs bg-gray-100 text-gray-800 rounded-full px-2 py-1 border-none focus:ring-1 focus:ring-blue-500"
                       >
-                        Editar
-                      </button>
-                      <span className="text-gray-300">•</span>
-                      <button
-                        onClick={() => {
-                          if (confirm("Tem certeza que deseja remover este anexo?")) {
-                            setNewPostMedia(null)
-                            setNewPostMediaType(null)
-                            setNewPostYoutubeUrl("")
-                            setVideoDuration(null)
-                          }
-                        }}
-                        className="text-xs text-red-600 hover:text-red-800"
-                      >
-                        Remover
-                      </button>
+                        {categories.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      if (confirm("Tem certeza que deseja remover este anexo?")) {
+                </div>
+
+                <div>
+                  <textarea
+                    placeholder="O que você está pensando?"
+                    value={newPostContent}
+                    onChange={(e) => setNewPostContent(e.target.value)}
+                    className="w-full h-32 p-4 border border-gray-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 resize-none"
+                  />
+                </div>
+
+                {newPostMedia && (
+                  <div className="relative">
+                    {newPostMediaType === "image" ? (
+                      <img src={newPostMedia || "/placeholder.svg"} alt="Post media" className="w-full rounded-lg" />
+                    ) : newPostMediaType === "video" ? (
+                      <video src={newPostMedia} controls className="w-full rounded-lg" />
+                    ) : newPostMediaType === "youtube" ? (
+                      <div className="relative pt-[56.25%]">
+                        <img
+                          src={newPostMedia || "/placeholder.svg"}
+                          alt="YouTube thumbnail"
+                          className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                        />
+                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                          <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
+                            <Play className="w-8 h-8 text-white ml-0.5" />
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="absolute top-2 right-2 bg-white/80 hover:bg-white"
+                      onClick={() => {
                         setNewPostMedia(null)
                         setNewPostMediaType(null)
                         setNewPostYoutubeUrl("")
                         setVideoDuration(null)
-                      }
-                    }}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
+                      }}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
 
-              {showYoutubeInput && !newPostMedia && (
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Cole o link do YouTube aqui"
-                    value={newPostYoutubeUrl}
-                    onChange={(e) => handleYouTubeUrlChange(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      setShowYoutubeInput(false)
-                      setNewPostYoutubeUrl("")
-                    }}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
+                {showYoutubeInput && (
+                  <div>
+                    <Input
+                      placeholder="Cole o link do YouTube aqui"
+                      value={newPostYoutubeUrl}
+                      onChange={(e) => handleYouTubeUrlChange(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                )}
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <select
-                    value={newPostCategory}
-                    onChange={(e) => setNewPostCategory(e.target.value)}
-                    className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    {categories.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => postMediaInputRef.current?.click()}
+                      className="text-gray-600"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Foto/Vídeo
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowYoutubeInput(!showYoutubeInput)}
+                      className="text-gray-600"
+                    >
+                      <Youtube className="w-4 h-4 mr-2" />
+                      YouTube
+                    </Button>
+                  </div>
                   <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => postMediaInputRef.current?.click()}
-                    disabled={!!newPostMedia}
+                    onClick={handleCreatePost}
+                    disabled={!newPostContent.trim()}
+                    className="bg-blue-600 hover:bg-blue-700"
                   >
-                    <Upload className="w-4 h-4 mr-2" />
-                    Mídia
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowYoutubeInput(!showYoutubeInput)}
-                    disabled={!!newPostMedia}
-                  >
-                    <Youtube className="w-4 h-4 mr-2" />
-                    YouTube
+                    Publicar
                   </Button>
                 </div>
               </div>
-            </div>
-
-            <div className="flex justify-end gap-3 p-4 border-t bg-gray-50">
-              <Button variant="outline" onClick={() => setShowCreatePostModal(false)}>
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleCreatePost}
-                disabled={!newPostContent.trim()}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                Publicar
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Avatar Preview Modal */}
-      {showAvatarPreview && (
-        <div
-          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
-          onClick={() => setShowAvatarPreview(false)}
-        >
-          <div className="relative">
-            <img
-              src={avatarImage || "/placeholder.svg"}
-              alt="Avatar preview"
-              className="w-64 h-64 rounded-full object-cover"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
       {/* Edit Profile Modal */}
       {showEditProfileModal && (
-        <div className="fixed inset-0 bg-white md:bg-black/50 flex items-start md:items-center justify-center z-50">
-          <div className="bg-white w-full h-full md:h-auto md:w-[480px] md:max-h-[90vh] md:rounded-2xl overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white z-10">
-              <div className="flex items-center gap-6">
-                <Button variant="ghost" size="icon" onClick={handleCancelEdit} className="rounded-full">
-                  <X className="w-5 h-5" />
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <div className="flex items-center gap-4">
+                <Button variant="ghost" size="icon" onClick={handleCancelEdit} className="rounded-full h-8 w-8">
+                  <X className="h-5 w-5" />
                 </Button>
-                <h3 className="text-xl font-bold">Edit profile</h3>
+                <h2 className="text-xl font-bold">Edit profile</h2>
               </div>
               <Button
                 onClick={handleEditProfileSave}
-                className="bg-black hover:bg-gray-800 text-white rounded-full px-6"
+                className="bg-black hover:bg-gray-800 text-white rounded-full px-4 py-1.5 text-sm font-semibold"
               >
                 Save
               </Button>
             </div>
 
-            <div className="space-y-6">
-              {/* Cover Image Section */}
-              <div className="relative">
+            {/* Cover Image */}
+            <div className="relative h-36 bg-gray-300">
+              {!tempCoverRemoved && tempCoverImage && tempCoverImage !== "/placeholder.svg?height=192&width=768" ? (
+                <img src={tempCoverImage || "/placeholder.svg"} alt="Cover" className="w-full h-full object-cover" />
+              ) : (
                 <div
-                  className="h-40 w-full bg-gray-200"
+                  className="w-full h-full"
                   style={{
                     background:
-                      tempCoverRemoved || !tempCoverImage || tempCoverImage === "/placeholder.svg?height=192&width=768"
-                        ? autoGradient || "linear-gradient(to bottom left, rgb(59, 130, 246), rgb(139, 92, 246))"
-                        : "none",
+                      tempAutoGradient || "linear-gradient(to bottom left, rgb(59, 130, 246), rgb(139, 92, 246))",
                   }}
+                ></div>
+              )}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => tempCoverInputRef.current?.click()}
+                  className="bg-gray-800/60 hover:bg-gray-800/80 text-white rounded-full h-10 w-10"
                 >
-                  {!tempCoverRemoved && tempCoverImage && tempCoverImage !== "/placeholder.svg?height=192&width=768" ? (
-                    <img
-                      src={tempCoverImage || "/placeholder.svg"}
-                      alt="Cover preview"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : null}
-                  <button
-                    onClick={() => tempCoverInputRef.current?.click()}
-                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-black/60 hover:bg-black/70 rounded-full flex items-center justify-center transition-colors"
-                  >
-                    <Upload className="w-5 h-5 text-white" />
-                  </button>
-                </div>
-
-                {/* Avatar Section */}
-                <div className="absolute left-6 -bottom-12">
-                  <div className="relative">
-                    <Avatar className="w-24 h-24 border-4 border-white">
-                      <AvatarImage src={tempAvatarImage || "/placeholder.svg"} />
-                      <AvatarFallback></AvatarFallback>
-                    </Avatar>
-                    <button
-                      onClick={() => tempAvatarInputRef.current?.click()}
-                      className="absolute bottom-0 right-0 w-8 h-8 bg-black/60 hover:bg-black/70 rounded-full flex items-center justify-center transition-colors"
-                    >
-                      <Upload className="w-4 h-4 text-white" />
-                    </button>
-                  </div>
-                </div>
+                  <Upload className="h-5 w-5" />
+                </Button>
               </div>
+            </div>
 
-              {/* Form Fields */}
-              <div className="px-6 pt-14 pb-6 space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Name</label>
-                  <Input value={editingName} onChange={(e) => setEditingName(e.target.value)} placeholder="Your name" />
+            {/* Avatar */}
+            <div className="px-4 relative">
+              <div className="relative -mt-12 mb-4 w-24 h-24">
+                <div className="w-24 h-24 rounded-full bg-gray-300 border-4 border-white overflow-hidden">
+                  <Avatar className="w-full h-full">
+                    <AvatarImage src={tempAvatarImage || "/placeholder.svg"} />
+                    <AvatarFallback className="text-2xl bg-gray-300"></AvatarFallback>
+                  </Avatar>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute -bottom-1 -right-1 bg-gray-800/80 hover:bg-gray-800 text-white rounded-full h-8 w-8 border-2 border-white"
+                  onClick={() => tempAvatarInputRef.current?.click()}
+                >
+                  <Upload className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Bio</label>
-                  <textarea
-                    className="w-full border rounded-lg p-3 min-h-[100px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    value={editingBio}
-                    onChange={(e) => setEditingBio(e.target.value)}
-                    placeholder="Escreva uma biografia..."
-                    maxLength={300}
-                  />
-                  <div className="text-right text-xs text-gray-500">{editingBio.length}/300 characters</div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Location</label>
-                  <Input
-                    value={editingLocation}
-                    onChange={(e) => setEditingLocation(e.target.value)}
-                    placeholder="Your location"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Website</label>
-                  <Input
-                    value={editingWebsite}
-                    onChange={(e) => setEditingWebsite(e.target.value)}
-                    placeholder="Your website"
-                  />
-                </div>
+            {/* Form Fields */}
+            <div className="p-4 space-y-4">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Name
+                </label>
+                <Input
+                  id="name"
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="breno henrique"
+                />
+              </div>
+              <div>
+                <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
+                  Bio
+                </label>
+                <textarea
+                  id="bio"
+                  value={editingBio}
+                  onChange={(e) => setEditingBio(e.target.value)}
+                  className="w-full h-20 p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 resize-none"
+                  placeholder="Tell us about yourself..."
+                />
+              </div>
+              <div>
+                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+                  Location
+                </label>
+                <Input
+                  id="location"
+                  value={editingLocation}
+                  onChange={(e) => setEditingLocation(e.target.value)}
+                  className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Where are you located?"
+                />
+              </div>
+              <div>
+                <label htmlFor="website" className="block text-sm font-medium text-gray-700 mb-1">
+                  Website
+                </label>
+                <Input
+                  id="website"
+                  value={editingWebsite}
+                  onChange={(e) => setEditingWebsite(e.target.value)}
+                  className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Your website URL"
+                />
               </div>
             </div>
           </div>
@@ -2867,126 +2787,194 @@ export default function ProfilePage() {
 
       {/* Remove Cover Confirmation Modal */}
       {showRemoveCoverModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Remove cover photo?</h3>
-              <p className="text-gray-600 mb-6">
-                This will remove your current cover photo. A gradient based on your profile picture will be used
-                instead.
-              </p>
-              <div className="flex justify-end gap-3">
-                <Button variant="outline" onClick={() => setShowRemoveCoverModal(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => {
-                    setTempCoverRemoved(true)
-                    setTempCoverImage("/placeholder.svg?height=192&width=768")
-                    setShowRemoveCoverModal(false)
-                  }}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  Remove
-                </Button>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-6">
+              <div className="text-center space-y-4">
+                <h3 className="text-lg font-medium text-gray-900">Remover imagem de capa?</h3>
+                <p className="text-gray-600">
+                  Você tem certeza que deseja remover sua imagem de capa? Esta ação não pode ser desfeita.
+                </p>
+                <div className="flex items-center justify-center gap-3 pt-4">
+                  <Button variant="outline" onClick={() => setShowRemoveCoverModal(false)}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      setTempCoverRemoved(true)
+                      setShowRemoveCoverModal(false)
+                    }}
+                  >
+                    Remover
+                  </Button>
+                </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Avatar Preview Modal */}
+      {showAvatarPreview && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+          <div className="relative max-w-2xl max-h-[90vh]">
+            <img
+              src={avatarImage || "/placeholder.svg"}
+              alt="Profile"
+              className="max-w-full max-h-[80vh] object-contain rounded-lg"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white border-none"
+              onClick={() => setShowAvatarPreview(false)}
+            >
+              <X className="w-5 h-5" />
+            </Button>
           </div>
         </div>
       )}
 
       {/* YouTube Modal */}
-      {showYouTubeModal && currentYouTubeUrl && (
+      {showYouTubeModal && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b">
-              <div className="flex items-center gap-3">
-                <Youtube className="w-6 h-6 text-red-600" />
-                <h3 className="text-lg font-semibold">{currentVideoData?.title || "Vídeo do YouTube"}</h3>
-              </div>
-              <Button variant="ghost" size="sm" onClick={closeYouTubeModal}>
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
+          <div className="relative w-full max-w-5xl">
+            <Button
+              variant="outline"
+              size="sm"
+              className="absolute -top-12 right-0 bg-black/50 hover:bg-black/70 text-white border-none"
+              onClick={closeYouTubeModal}
+            >
+              <X className="w-5 h-5" />
+            </Button>
 
-            <div className="flex flex-col lg:flex-row h-[calc(90vh-80px)]">
-              {/* Video Player */}
-              <div className="flex-1 bg-black flex items-center justify-center">
-                {getYouTubeEmbedUrl(currentYouTubeUrl) ? (
-                  <iframe
-                    src={getYouTubeEmbedUrl(currentYouTubeUrl) || ""}
-                    className="w-full h-full"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-                ) : (
-                  <div className="text-white text-center">
-                    <Youtube className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                    <p>Não foi possível carregar o vídeo</p>
-                  </div>
-                )}
+            <div className="bg-white rounded-xl overflow-hidden">
+              <div className="aspect-video">
+                <iframe
+                  src={getYouTubeEmbedUrl(currentYouTubeUrl)}
+                  title="YouTube video player"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full"
+                ></iframe>
               </div>
 
-              {/* Comments Sidebar */}
-              <div className="lg:w-80 border-l bg-gray-50 flex flex-col">
-                <div className="p-4 border-b bg-white">
-                  <h4 className="font-semibold text-gray-900 mb-2">Comentários</h4>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Adicione um comentário..."
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      className="flex-1"
-                      onKeyPress={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault()
-                          handleAddComment()
-                        }
-                      }}
-                    />
-                    <Button onClick={handleAddComment} size="sm">
-                      Enviar
-                    </Button>
+              <div className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">{currentVideoData?.title || "Vídeo"}</h2>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={currentVideoData?.author?.avatar || avatarImage || "/placeholder.svg"} />
+                        <AvatarFallback></AvatarFallback>
+                      </Avatar>
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm font-medium text-gray-900">
+                          {currentVideoData?.author?.name || userProfile.name}
+                        </span>
+                        {currentVideoData?.author?.verified && <Verified className="w-3 h-3 text-blue-500" />}
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {videoComments.length > 0 ? (
-                    videoComments.map((comment) => (
-                      <div key={comment.id} className="flex gap-3">
-                        <Avatar className="w-8 h-8 flex-shrink-0">
-                          <AvatarImage src={comment.avatar || "/placeholder.svg"} />
-                          <AvatarFallback>{comment.user[0]}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-medium text-gray-900">{comment.user}</span>
-                            <span className="text-xs text-gray-500">{comment.timestamp}</span>
-                          </div>
-                          <p className="text-sm text-gray-700">{comment.comment}</p>
-                          <div className="flex items-center gap-4 mt-2">
-                            <button className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700">
-                              <Heart className="w-3 h-3" />
-                              {comment.likes}
-                            </button>
-                            <button className="text-xs text-gray-500 hover:text-gray-700">Responder</button>
+                  <p className="text-gray-700">{currentVideoData?.content || ""}</p>
+
+                  <div className="flex items-center gap-6 py-4 border-t border-b border-gray-100">
+                    <div className="flex items-center gap-1">
+                      <Eye className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-700">
+                        {formatNumber(currentVideoData?.stats?.views || 0)} visualizações
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Heart className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-700">
+                        {formatNumber(currentVideoData?.stats?.likes || 0)} curtidas
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <MessageCircle className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-700">
+                        {formatNumber(currentVideoData?.stats?.comments || 0)} comentários
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Share className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-700">
+                        {formatNumber(currentVideoData?.stats?.shares || 0)} compartilhamentos
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={avatarImage || "/placeholder.svg"} />
+                        <AvatarFallback></AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <Input
+                          placeholder="Adicione um comentário..."
+                          value={newComment}
+                          onChange={(e) => setNewComment(e.target.value)}
+                          className="border-none focus:ring-0 px-0"
+                        />
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={handleAddComment}
+                        disabled={!newComment.trim()}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        Comentar
+                      </Button>
+                    </div>
+
+                    <div className="space-y-4">
+                      {videoComments.map((comment: any) => (
+                        <div key={comment.id} className="flex gap-3">
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage src={comment.avatar || "/placeholder.svg"} />
+                            <AvatarFallback></AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-900">{comment.user}</span>
+                              <span className="text-xs text-gray-500">{comment.timestamp}</span>
+                            </div>
+                            <p className="text-sm text-gray-700 mt-1">{comment.comment}</p>
+                            <div className="flex items-center gap-4 mt-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-gray-500 hover:text-gray-700 h-auto py-0"
+                              >
+                                <Heart className="w-3 h-3 mr-1" />
+                                <span className="text-xs">{comment.likes}</span>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-gray-500 hover:text-gray-700 h-auto py-0"
+                              >
+                                <span className="text-xs">Responder</span>
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center text-gray-500 py-8">
-                      <MessageCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">Seja o primeiro a comentar!</p>
+                      ))}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Canvas oculto para análise de cores */}
+      <canvas ref={colorAnalysisCanvasRef} className="hidden" width="300" height="300" />
     </div>
   )
 }
