@@ -1,9 +1,8 @@
-import type React from "react"
-import type { Metadata } from "next"
-import "./globals.css"
+import type { Metadata } from 'next'
+import './globals.css'
 
 export const metadata: Metadata = {
-  title: "Perfil", 
+  title: 'Perfil',
 }
 
 export default function RootLayout({
