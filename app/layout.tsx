@@ -3,8 +3,7 @@ import type { Metadata } from "next"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "Perfil",
-    generator: 'v0.dev'
+  title: "Perfil", 
 }
 
 export default function RootLayout({

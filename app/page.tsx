@@ -4,12 +4,11 @@ import type React from "react"
 import { Edit, X, Youtube, Menu } from "lucide-react"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Search,
   Bell,
@@ -19,7 +18,6 @@ import {
   Star,
   MessageCircle,
   Trophy,
-  Heart,
   MoreHorizontal,
   Verified,
   MapPin,
@@ -30,7 +28,6 @@ import {
   Share,
   Play,
   Grid3X3,
-  List,
   Crown,
   BarChart3,
   Home,
@@ -942,6 +939,8 @@ export default function ProfilePage() {
     setShowCreatePostModal(false)
   }
 
+  // Atualize a função handleEditProfileSave para salvar o gradiente:
+
   const handleEditProfileSave = () => {
     setUserProfile((prev) => ({
       ...prev,
@@ -959,11 +958,16 @@ export default function ProfilePage() {
     }
 
     setAvatarImage(tempAvatarImage)
+
+    // Salvar o gradiente temporário como gradiente principal
+    if (tempAutoGradient) {
+      setAutoGradient(tempAutoGradient)
+    }
+
     setTempCoverRemoved(false)
     setShowEditProfileModal(false)
   }
 
-  // Modificar handleCancelEdit para restaurar o gradiente temporário
   const handleCancelEdit = () => {
     setEditingName(userProfile.name)
     setEditingBio(userProfile.bio)
@@ -1979,436 +1983,255 @@ export default function ProfilePage() {
                     size="sm"
                     onClick={() => setViewMode("list")}
                   >
-                    <List className="w-4 h-4" />
+                    <Eye className="w-4 h-4" />
                   </Button>
                 </div>
               )}
             </div>
 
-            {/* Posts Tab */}
-            <TabsContent value="posts">
-              <div className="min-h-[400px]">
-                {userPosts.length > 0 ? (
-                  <div
-                    className={
-                      viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-6"
-                    }
-                  >
-                    {userPosts.map((post) =>
-                      viewMode === "grid" ? (
-                        // Grid View - Card Style
-                        <Card
-                          key={post.id}
-                          className="overflow-hidden hover:shadow-lg transition-all duration-300 border-gray-100 transform hover:scale-105 cursor-pointer"
+            {/* Posts Tab Content */}
+            {activeTab === "posts" && (
+              <div
+                className={`grid ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" : "grid-cols-1 gap-6"}`}
+              >
+                {userPosts.map((post) => (
+                  <Card key={post.id} className={`overflow-hidden ${viewMode === "list" ? "flex" : ""}`}>
+                    {post.thumbnail && (
+                      <div className={viewMode === "list" ? "w-1/3 relative" : "relative"}>
+                        <img
+                          src={post.thumbnail || "/placeholder.svg"}
+                          alt={post.title}
+                          className="w-full h-48 object-cover"
                           onClick={() => {
                             if (post.type === "youtube" && post.youtubeUrl) {
                               openYouTubeModal(post.youtubeUrl, post)
                             }
                           }}
-                        >
-                          <div className="relative">
-                            <img
-                              src={post.thumbnail || "/placeholder.svg?height=192&width=320"}
-                              alt={post.content}
-                              className="w-full object-cover h-48"
-                            />
-                            {(post.type === "youtube" || post.type === "video") && (
-                              <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                                <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors">
-                                  <Play className="w-6 h-6 text-white ml-0.5" />
-                                </div>
-                              </div>
-                            )}
+                        />
+                        {post.type === "video" || post.type === "youtube" ? (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center">
+                              <Play className="w-6 h-6 text-white" />
+                            </div>
                             {post.duration && (
-                              <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
+                              <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
                                 {post.duration}
                               </div>
                             )}
-                            <Badge className={`absolute top-2 left-2 ${getCategoryColor(post.category)}`}>
-                              {post.category}
-                            </Badge>
                           </div>
-                          <CardContent className="p-4">
-                            <div className="space-y-3">
-                              {/* Author Info */}
-                              <div className="flex items-center gap-2">
-                                <Avatar className="w-6 h-6">
-                                  <AvatarImage src={post.author?.avatar || avatarImage || "/placeholder.svg"} />
-                                  <AvatarFallback className="text-xs">{post.author?.name?.[0] || "U"}</AvatarFallback>
-                                </Avatar>
-                                <span className="text-sm font-medium text-gray-700">
-                                  {post.author?.name || userProfile.name}
-                                </span>
-                                {post.author?.verified && <Verified className="w-3 h-3 text-blue-500" />}
-                              </div>
-
-                              <p className="text-sm text-gray-900 line-clamp-3 leading-relaxed">{post.content}</p>
-
-                              <div className="flex items-center justify-between text-sm text-gray-500">
-                                <div className="flex items-center gap-4">
-                                  {post.stats.views !== undefined && (
-                                    <div className="flex items-center gap-1">
-                                      <Eye className="w-4 h-4" />
-                                      {formatNumber(post.stats.views)}
-                                    </div>
-                                  )}
-                                  <div className="flex items-center gap-1">
-                                    <Heart className="w-4 h-4" />
-                                    {formatNumber(post.stats.likes)}
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <MessageCircle className="w-4 h-4" />
-                                    {formatNumber(post.stats.comments)}
-                                  </div>
-                                </div>
-                                <span>{post.timestamp}</span>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ) : (
-                        // List View
-                        <Card
-                          key={post.id}
-                          className="overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 rounded-2xl bg-white transform hover:scale-[1.02]"
-                        >
-                          <CardContent className="p-6">
-                            {/* Header do Post */}
-                            <div className="flex gap-4 mb-4">
-                              <Avatar className="w-12 h-12 ring-2 ring-gray-100">
-                                <AvatarImage src={post.author?.avatar || avatarImage || "/placeholder.svg"} />
-                                <AvatarFallback>{post.author?.name?.[0] || "U"}</AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-semibold text-gray-900">
-                                    {post.author?.name || userProfile.name}
-                                  </span>
-                                  {post.author?.verified && <Verified className="w-4 h-4 text-blue-500" />}
-                                  <span className="text-gray-500 text-sm">
-                                    {post.author?.username || userProfile.username}
-                                  </span>
-                                  <span className="text-gray-400">·</span>
-                                  <span className="text-gray-500 text-sm">{post.timestamp}</span>
-                                </div>
-                                <Badge className={`w-fit ${getCategoryColor(post.category)}`}>{post.category}</Badge>
-                              </div>
-                              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-gray-600">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
-                            </div>
-
-                            {/* Conteúdo do Post */}
-                            <div className="space-y-4">
-                              {/* Layout dividido: conteúdo à esquerda, mídia à direita */}
-                              <div className="flex gap-6">
-                                {/* Lado esquerdo - Conteúdo */}
-                                <div className="flex-1">
-                                  <p className="text-gray-900 leading-relaxed text-base">{post.content}</p>
-                                </div>
-
-                                {/* Lado direito - Mídia (miniatura) */}
-                                {post.thumbnail && (
-                                  <div className="w-48 flex-shrink-0">
-                                    <div className="relative rounded-xl overflow-hidden shadow-md h-32 bg-gray-100">
-                                      {post.type === "youtube" ? (
-                                        <div className="relative h-full">
-                                          <img
-                                            src={post.thumbnail || "/placeholder.svg"}
-                                            alt="YouTube thumbnail"
-                                            className="w-full h-full object-cover cursor-pointer"
-                                            onClick={() => post.youtubeUrl && openYouTubeModal(post.youtubeUrl, post)}
-                                          />
-                                          <div
-                                            className="absolute inset-0 bg-black/20 flex items-center justify-center cursor-pointer"
-                                            onClick={() => post.youtubeUrl && openYouTubeModal(post.youtubeUrl, post)}
-                                          />
-                                          {post.duration && (
-                                            <div className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 py-0.5 rounded">
-                                              {post.duration}
-                                            </div>
-                                          )}
-                                        </div>
-                                      ) : (
-                                        <img
-                                          src={post.thumbnail || "/placeholder.svg"}
-                                          alt="Post media"
-                                          className="w-full h-full object-cover"
-                                        />
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Ações do Post */}
-                              <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                                <div className="flex items-center gap-6">
-                                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-red-600">
-                                    <Heart className="w-4 h-4 mr-1" />
-                                    {formatNumber(post.stats.likes)}
-                                  </Button>
-                                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600">
-                                    <MessageCircle className="w-4 h-4 mr-1" />
-                                    {formatNumber(post.stats.comments)}
-                                  </Button>
-                                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-green-600">
-                                    <Share className="w-4 h-4 mr-1" />
-                                    {formatNumber(post.stats.shares)}
-                                  </Button>
-                                </div>
-                                {post.stats.views !== undefined && (
-                                  <div className="flex items-center gap-1 text-sm text-gray-500">
-                                    <Eye className="w-4 h-4" />
-                                    {formatNumber(post.stats.views)} visualizações
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ),
+                        ) : null}
+                      </div>
                     )}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                      <Upload className="w-8 h-8 text-gray-400" />
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum post ainda</h3>
-                    <p className="text-gray-600 mb-6 max-w-md">
-                      Compartilhe seus pensamentos, fotos, vídeos ou links para começar a criar seu perfil.
-                    </p>
-                    <Button onClick={() => setShowCreatePostModal(true)}>Criar Post</Button>
-                  </div>
-                )}
+                    <CardContent className={`p-4 ${viewMode === "list" && post.thumbnail ? "w-2/3" : "w-full"}`}>
+                      <div className="flex items-center gap-3 mb-3">
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage src={post.author.avatar || "/placeholder.svg"} />
+                          <AvatarFallback></AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium text-sm">{post.author.name}</span>
+                            {post.author.verified && <Verified className="w-3 h-3 text-blue-500" />}
+                          </div>
+                          <div className="text-xs text-gray-500">{post.timestamp}</div>
+                        </div>
+                      </div>
+                      <h3 className="font-semibold mb-2">{post.title}</h3>
+                      <p className="text-gray-600 text-sm mb-3 line-clamp-2">{post.content}</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                          <span className={`text-xs px-2 py-1 rounded-full ${getCategoryColor(post.category)}`}>
+                            {post.category}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 text-gray-500">
+                          {post.stats.views !== undefined && (
+                            <div className="flex items-center gap-1 text-xs">
+                              <Eye className="w-3 h-3" />
+                              <span>{formatNumber(post.stats.views)}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1 text-xs">
+                            <Star className="w-3 h-3" />
+                            <span>{formatNumber(post.stats.likes)}</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-xs">
+                            <MessageCircle className="w-3 h-3" />
+                            <span>{formatNumber(post.stats.comments)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-            </TabsContent>
+            )}
 
-            {/* Videos Tab */}
-            <TabsContent value="videos">
-              <div className="min-h-[400px]">
-                {userPosts.filter((post) => post.type === "youtube" || post.type === "video").length > 0 ? (
-                  <div
-                    className={
-                      viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-6"
-                    }
-                  >
-                    {userPosts
-                      .filter((post) => post.type === "youtube" || post.type === "video")
-                      .map((post) =>
-                        viewMode === "grid" ? (
-                          // Grid View - Card Style
-                          <Card
-                            key={post.id}
-                            className="overflow-hidden hover:shadow-lg transition-all duration-300 border-gray-100 transform hover:scale-105 cursor-pointer"
+            {/* Videos Tab Content */}
+            {activeTab === "videos" && (
+              <div
+                className={`grid ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" : "grid-cols-1 gap-6"}`}
+              >
+                {userPosts
+                  .filter((post) => post.type === "video" || post.type === "youtube")
+                  .map((post) => (
+                    <Card key={post.id} className={`overflow-hidden ${viewMode === "list" ? "flex" : ""}`}>
+                      {post.thumbnail && (
+                        <div className={viewMode === "list" ? "w-1/3 relative" : "relative"}>
+                          <img
+                            src={post.thumbnail || "/placeholder.svg"}
+                            alt={post.title}
+                            className="w-full h-48 object-cover"
                             onClick={() => {
                               if (post.type === "youtube" && post.youtubeUrl) {
                                 openYouTubeModal(post.youtubeUrl, post)
                               }
                             }}
-                          >
-                            <div className="relative">
-                              <img
-                                src={post.thumbnail || "/placeholder.svg?height=192&width=320"}
-                                alt={post.content}
-                                className="w-full object-cover h-48"
-                              />
-                              <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                                <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors">
-                                  <Play className="w-6 h-6 text-white ml-0.5" />
-                                </div>
-                              </div>
-                              {post.duration && (
-                                <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
-                                  {post.duration}
-                                </div>
-                              )}
-                              <Badge className={`absolute top-2 left-2 ${getCategoryColor(post.category)}`}>
-                                {post.category}
-                              </Badge>
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center">
+                              <Play className="w-6 h-6 text-white" />
                             </div>
-                            <CardContent className="p-4">
-                              <div className="space-y-3">
-                                {/* Author Info */}
-                                <div className="flex items-center gap-2">
-                                  <Avatar className="w-6 h-6">
-                                    <AvatarImage src={post.author?.avatar || avatarImage || "/placeholder.svg"} />
-                                    <AvatarFallback className="text-xs">{post.author?.name?.[0] || "U"}</AvatarFallback>
-                                  </Avatar>
-                                  <span className="text-sm font-medium text-gray-700">
-                                    {post.author?.name || userProfile.name}
-                                  </span>
-                                  {post.author?.verified && <Verified className="w-3 h-3 text-blue-500" />}
-                                </div>
-
-                                <p className="text-sm text-gray-900 line-clamp-3 leading-relaxed">{post.content}</p>
-
-                                <div className="flex items-center justify-between text-sm text-gray-500">
-                                  <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-1">
-                                      <Eye className="w-4 h-4" />
-                                      {formatNumber(post.stats.views || 0)}
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <Heart className="w-4 h-4" />
-                                      {formatNumber(post.stats.likes)}
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <MessageCircle className="w-4 h-4" />
-                                      {formatNumber(post.stats.comments)}
-                                    </div>
-                                  </div>
-                                  <span>{post.timestamp}</span>
-                                </div>
+                            {post.duration && (
+                              <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                                {post.duration}
                               </div>
-                            </CardContent>
-                          </Card>
-                        ) : (
-                          // List View
-                          <Card
-                            key={post.id}
-                            className="overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 rounded-2xl bg-white transform hover:scale-[1.02]"
-                          >
-                            <CardContent className="p-6">
-                              {/* Header do Post */}
-                              <div className="flex gap-4 mb-4">
-                                <Avatar className="w-12 h-12 ring-2 ring-gray-100">
-                                  <AvatarImage src={post.author?.avatar || avatarImage || "/placeholder.svg"} />
-                                  <AvatarFallback>{post.author?.name?.[0] || "U"}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-semibold text-gray-900">
-                                      {post.author?.name || userProfile.name}
-                                    </span>
-                                    {post.author?.verified && <Verified className="w-4 h-4 text-blue-500" />}
-                                    <span className="text-gray-500 text-sm">
-                                      {post.author?.username || userProfile.username}
-                                    </span>
-                                    <span className="text-gray-400">·</span>
-                                    <span className="text-gray-500 text-sm">{post.timestamp}</span>
-                                  </div>
-                                  <Badge className={`w-fit ${getCategoryColor(post.category)}`}>{post.category}</Badge>
-                                </div>
-                                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-gray-600">
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </Button>
-                              </div>
-
-                              {/* Conteúdo do Post */}
-                              <div className="space-y-4">
-                                <p className="text-gray-900 leading-relaxed text-base">{post.content}</p>
-
-                                {/* Miniatura do vídeo */}
-                                {post.thumbnail && (
-                                  <div className="relative rounded-xl overflow-hidden shadow-md h-64 bg-gray-100">
-                                    <img
-                                      src={post.thumbnail || "/placeholder.svg"}
-                                      alt="Video thumbnail"
-                                      className="w-full h-full object-cover"
-                                    />
-                                    <div
-                                      className="absolute inset-0 bg-black/20 flex items-center justify-center cursor-pointer"
-                                      onClick={() => post.youtubeUrl && openYouTubeModal(post.youtubeUrl, post)}
-                                    >
-                                      <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors">
-                                        <Play className="w-8 h-8 text-white ml-0.5" />
-                                      </div>
-                                    </div>
-                                    {post.duration && (
-                                      <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
-                                        {post.duration}
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-
-                                {/* Ações do Post */}
-                                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                                  <div className="flex items-center gap-6">
-                                    <Button variant="ghost" size="sm" className="text-gray-600 hover:text-red-600">
-                                      <Heart className="w-4 h-4 mr-1" />
-                                      {formatNumber(post.stats.likes)}
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600">
-                                      <MessageCircle className="w-4 h-4 mr-1" />
-                                      {formatNumber(post.stats.comments)}
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="text-gray-600 hover:text-green-600">
-                                      <Share className="w-4 h-4 mr-1" />
-                                      {formatNumber(post.stats.shares)}
-                                    </Button>
-                                  </div>
-                                  <div className="flex items-center gap-1 text-sm text-gray-500">
-                                    <Eye className="w-4 h-4" />
-                                    {formatNumber(post.stats.views || 0)} visualizações
-                                  </div>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ),
+                            )}
+                          </div>
+                        </div>
                       )}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                      <Play className="w-8 h-8 text-gray-400" />
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum vídeo ainda</h3>
-                    <p className="text-gray-600 mb-6 max-w-md">
-                      Compartilhe seus vídeos ou links do YouTube para começar a criar sua biblioteca de vídeos.
-                    </p>
-                    <Button onClick={() => setShowCreatePostModal(true)}>Adicionar Vídeo</Button>
-                  </div>
-                )}
+                      <CardContent className={`p-4 ${viewMode === "list" && post.thumbnail ? "w-2/3" : "w-full"}`}>
+                        <div className="flex items-center gap-3 mb-3">
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage src={post.author.avatar || "/placeholder.svg"} />
+                            <AvatarFallback></AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="flex items-center gap-1">
+                              <span className="font-medium text-sm">{post.author.name}</span>
+                              {post.author.verified && <Verified className="w-3 h-3 text-blue-500" />}
+                            </div>
+                            <div className="text-xs text-gray-500">{post.timestamp}</div>
+                          </div>
+                        </div>
+                        <h3 className="font-semibold mb-2">{post.title}</h3>
+                        <p className="text-gray-600 text-sm mb-3 line-clamp-2">{post.content}</p>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1">
+                            <span className={`text-xs px-2 py-1 rounded-full ${getCategoryColor(post.category)}`}>
+                              {post.category}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 text-gray-500">
+                            <div className="flex items-center gap-1 text-xs">
+                              <Eye className="w-3 h-3" />
+                              <span>{formatNumber(post.stats.views || 0)}</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs">
+                              <Star className="w-3 h-3" />
+                              <span>{formatNumber(post.stats.likes)}</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs">
+                              <MessageCircle className="w-3 h-3" />
+                              <span>{formatNumber(post.stats.comments)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
               </div>
-            </TabsContent>
+            )}
 
-            {/* Collections Tab */}
-            <TabsContent value="collections">
-              <div className="min-h-[400px]">
-                {collections.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* Collections would go here */}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+            {/* Collections Tab Content */}
+            {activeTab === "collections" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {collections.length === 0 ? (
+                  <div className="col-span-3 py-12 text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <Grid3X3 className="w-8 h-8 text-gray-400" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma coleção ainda</h3>
-                    <p className="text-gray-600 mb-6 max-w-md">
-                      Crie coleções para organizar seus posts e vídeos favoritos por temas ou categorias.
-                    </p>
-                    <Button>Criar Coleção</Button>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-
-            {/* Achievements Tab */}
-            <TabsContent value="achievements">
-              <div className="min-h-[400px]">
-                {achievements.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* Achievements would go here */}
+                    <h3 className="text-lg font-medium text-gray-900 mb-1">Nenhuma coleção ainda</h3>
+                    <p className="text-gray-600 mb-4">Crie coleções para organizar seus conteúdos favoritos</p>
+                    <Button>Criar coleção</Button>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                      <Trophy className="w-8 h-8 text-gray-400" />
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma conquista ainda</h3>
-                    <p className="text-gray-600 mb-6 max-w-md">
-                      Continue interagindo na plataforma para desbloquear conquistas e mostrar suas realizações.
-                    </p>
-                    <Button>Ver Conquistas Disponíveis</Button>
-                  </div>
+                  collections.map((collection) => (
+                    <Card key={collection.id} className="overflow-hidden">
+                      <div className="relative">
+                        <img
+                          src={collection.cover || "/placeholder.svg"}
+                          alt={collection.name}
+                          className="w-full h-48 object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                        <div className="absolute bottom-0 left-0 p-4">
+                          <h3 className="text-white font-bold text-lg">{collection.name}</h3>
+                          <p className="text-gray-200 text-sm">{collection.itemCount} itens</p>
+                        </div>
+                      </div>
+                    </Card>
+                  ))
                 )}
               </div>
-            </TabsContent>
+            )}
+
+            {/* Achievements Tab Content */}
+            {activeTab === "achievements" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {achievements.length === 0 ? (
+                  <div className="col-span-3 py-12 text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Trophy className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-1">Nenhuma conquista ainda</h3>
+                    <p className="text-gray-600 mb-4">Continue interagindo para desbloquear conquistas</p>
+                    <Button>Explorar desafios</Button>
+                  </div>
+                ) : (
+                  achievements.map((achievement) => (
+                    <Card
+                      key={achievement.id}
+                      className={`border-2 ${getRarityColor(achievement.rarity)} ${getRarityGlow(achievement.rarity)} shadow-lg`}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-4">
+                          <div
+                            className={`w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center ${
+                              achievement.unlocked ? "bg-yellow-100" : "bg-gray-100"
+                            }`}
+                          >
+                            <achievement.icon
+                              className={`w-6 h-6 ${achievement.unlocked ? "text-yellow-600" : "text-gray-400"}`}
+                            />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-gray-900">{achievement.name}</h3>
+                            <p className="text-sm text-gray-600">{achievement.description}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <div
+                                className={`text-xs px-2 py-0.5 rounded-full ${
+                                  achievement.rarity === "lendário"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : achievement.rarity === "épico"
+                                      ? "bg-purple-100 text-purple-800"
+                                      : "bg-blue-100 text-blue-800"
+                                }`}
+                              >
+                                {achievement.rarity}
+                              </div>
+                              <span className="text-xs text-gray-500">
+                                {achievement.unlocked ? "Desbloqueado" : "Bloqueado"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            )}
           </Tabs>
         </div>
       </div>
@@ -2424,9 +2247,7 @@ export default function ProfilePage() {
                 </div>
                 <span className="text-xl font-bold text-gray-900">BILIBILI</span>
               </div>
-              <p className="text-gray-600 text-sm mb-4">
-                Uma plataforma do corono
-              </p>
+              <p className="text-gray-600 text-sm mb-4">A plataforma do corono.</p>
               <div className="flex items-center gap-4">
                 <a href="#" className="text-gray-500 hover:text-gray-900">
                   <Youtube className="w-5 h-5" />
@@ -2442,9 +2263,8 @@ export default function ProfilePage() {
                 </a>
               </div>
             </div>
-
             <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Plataforma</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">Empresa</h3>
               <ul className="space-y-2 text-sm">
                 <li>
                   <a href="#" className="text-gray-600 hover:text-blue-600">
@@ -2468,33 +2288,31 @@ export default function ProfilePage() {
                 </li>
               </ul>
             </div>
-
             <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Comunidade</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">Recursos</h3>
               <ul className="space-y-2 text-sm">
                 <li>
                   <a href="#" className="text-gray-600 hover:text-blue-600">
-                    Criadores
+                    Criador Studio
                   </a>
                 </li>
                 <li>
                   <a href="#" className="text-gray-600 hover:text-blue-600">
-                    Fórum
+                    Comunidade
                   </a>
                 </li>
                 <li>
                   <a href="#" className="text-gray-600 hover:text-blue-600">
-                    Eventos
+                    Monetização
                   </a>
                 </li>
                 <li>
                   <a href="#" className="text-gray-600 hover:text-blue-600">
-                    Programa de Parceiros
+                    Analytics
                   </a>
                 </li>
               </ul>
             </div>
-
             <div>
               <h3 className="font-semibold text-gray-900 mb-4">Suporte</h3>
               <ul className="space-y-2 text-sm">
@@ -2510,28 +2328,27 @@ export default function ProfilePage() {
                 </li>
                 <li>
                   <a href="#" className="text-gray-600 hover:text-blue-600">
-                    Política de Privacidade
+                    Privacidade
                   </a>
                 </li>
                 <li>
                   <a href="#" className="text-gray-600 hover:text-blue-600">
-                    Diretrizes da Comunidade
+                    Contato
                   </a>
                 </li>
               </ul>
             </div>
           </div>
-
-          <div className="border-t border-gray-200 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-600 text-sm">© 2023 BILIBILI. Todos os direitos reservados.</p>
+          <div className="border-t border-gray-200 mt-8 pt-6 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-sm text-gray-600">© 2023 BILIBILI. Todos os direitos reservados.</p>
             <div className="flex items-center gap-4 mt-4 md:mt-0">
-              <a href="#" className="text-gray-600 hover:text-blue-600 text-sm">
-                Português (Brasil)
+              <a href="#" className="text-sm text-gray-600 hover:text-blue-600">
+                Termos
               </a>
-              <a href="#" className="text-gray-600 hover:text-blue-600 text-sm">
-                Acessibilidade
+              <a href="#" className="text-sm text-gray-600 hover:text-blue-600">
+                Privacidade
               </a>
-              <a href="#" className="text-gray-600 hover:text-blue-600 text-sm">
+              <a href="#" className="text-sm text-gray-600 hover:text-blue-600">
                 Cookies
               </a>
             </div>
@@ -2539,66 +2356,67 @@ export default function ProfilePage() {
         </div>
       </footer>
 
-      {/* Create Post Modal */}
+      {/* Canvas para análise de cores (invisível) */}
+      <canvas ref={colorAnalysisCanvasRef} className="hidden" />
+
+      {/* Modais */}
+      {/* Modal de Criação de Post */}
       {showCreatePostModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <h2 className="text-xl font-semibold text-gray-900">Criar Post</h2>
-              <Button variant="ghost" size="sm" onClick={() => setShowCreatePostModal(false)}>
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-            <CardContent className="p-6">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Criar novo post</h2>
+                <Button variant="ghost" size="sm" onClick={() => setShowCreatePostModal(false)}>
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+
               <div className="space-y-6">
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3">
                   <Avatar className="w-10 h-10">
                     <AvatarImage src={avatarImage || "/placeholder.svg"} />
                     <AvatarFallback></AvatarFallback>
                   </Avatar>
-                  <div>
-                    <div className="font-medium text-gray-900">{userProfile.name}</div>
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={newPostCategory}
-                        onChange={(e) => setNewPostCategory(e.target.value)}
-                        className="text-xs bg-gray-100 text-gray-800 rounded-full px-2 py-1 border-none focus:ring-1 focus:ring-blue-500"
-                      >
-                        {categories.map((category) => (
-                          <option key={category} value={category}>
-                            {category}
-                          </option>
-                        ))}
-                      </select>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1 mb-1">
+                      <span className="font-medium text-sm">{userProfile.name}</span>
+                      {userProfile.verified && <Verified className="w-3 h-3 text-blue-500" />}
                     </div>
+                    <textarea
+                      value={newPostContent}
+                      onChange={(e) => setNewPostContent(e.target.value)}
+                      placeholder="O que você está pensando?"
+                      className="w-full border border-gray-200 rounded-lg p-3 min-h-[120px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
                   </div>
                 </div>
 
-                <div>
-                  <textarea
-                    placeholder="O que você está pensando?"
-                    value={newPostContent}
-                    onChange={(e) => setNewPostContent(e.target.value)}
-                    className="w-full h-32 p-4 border border-gray-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 resize-none"
-                  />
-                </div>
-
+                {/* Preview da mídia */}
                 {newPostMedia && (
                   <div className="relative">
                     {newPostMediaType === "image" ? (
-                      <img src={newPostMedia || "/placeholder.svg"} alt="Post media" className="w-full rounded-lg" />
+                      <img
+                        src={newPostMedia || "/placeholder.svg"}
+                        alt="Preview"
+                        className="w-full h-64 object-contain bg-gray-100 rounded-lg"
+                      />
                     ) : newPostMediaType === "video" ? (
-                      <video src={newPostMedia} controls className="w-full rounded-lg" />
+                      <video
+                        src={newPostMedia}
+                        controls
+                        className="w-full h-64 object-contain bg-gray-100 rounded-lg"
+                      />
                     ) : newPostMediaType === "youtube" ? (
-                      <div className="relative pt-[56.25%]">
+                      <div className="relative">
                         <img
                           src={newPostMedia || "/placeholder.svg"}
-                          alt="YouTube thumbnail"
-                          className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                          alt="YouTube Thumbnail"
+                          className="w-full h-64 object-cover rounded-lg"
                         />
-                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                          <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
-                            <Play className="w-8 h-8 text-white ml-0.5" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-16 h-16 rounded-full bg-red-600/90 flex items-center justify-center">
+                            <Play className="w-8 h-8 text-white" />
                           </div>
                         </div>
                       </div>
@@ -2606,7 +2424,7 @@ export default function ProfilePage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="absolute top-2 right-2 bg-white/80 hover:bg-white"
+                      className="absolute top-2 right-2 bg-white/90 hover:bg-white"
                       onClick={() => {
                         setNewPostMedia(null)
                         setNewPostMediaType(null)
@@ -2619,236 +2437,266 @@ export default function ProfilePage() {
                   </div>
                 )}
 
-                {showYoutubeInput && (
-                  <div>
-                    <Input
-                      placeholder="Cole o link do YouTube aqui"
-                      value={newPostYoutubeUrl}
-                      onChange={(e) => handleYouTubeUrlChange(e.target.value)}
-                      className="w-full"
-                    />
+                {/* Input de URL do YouTube */}
+                {showYoutubeInput && !newPostMedia && (
+                  <div className="space-y-2">
+                    <label htmlFor="youtube-url" className="text-sm font-medium text-gray-700">
+                      URL do YouTube
+                    </label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="youtube-url"
+                        value={newPostYoutubeUrl}
+                        onChange={(e) => handleYouTubeUrlChange(e.target.value)}
+                        placeholder="https://www.youtube.com/watch?v=..."
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowYoutubeInput(false)
+                          setNewPostYoutubeUrl("")
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
                   </div>
                 )}
 
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => postMediaInputRef.current?.click()}
-                      className="text-gray-600"
+                      disabled={!!newPostMedia}
                     >
                       <Upload className="w-4 h-4 mr-2" />
-                      Foto/Vídeo
+                      Mídia
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setShowYoutubeInput(!showYoutubeInput)}
-                      className="text-gray-600"
+                      onClick={() => setShowYoutubeInput(true)}
+                      disabled={!!newPostMedia || showYoutubeInput}
                     >
                       <Youtube className="w-4 h-4 mr-2" />
                       YouTube
                     </Button>
                   </div>
-                  <Button
-                    onClick={handleCreatePost}
-                    disabled={!newPostContent.trim()}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    Publicar
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={newPostCategory}
+                      onChange={(e) => setNewPostCategory(e.target.value)}
+                      className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      {categories.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                    <Button onClick={handleCreatePost} disabled={!newPostContent.trim()}>
+                      Publicar
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Edit Profile Modal */}
-      {showEditProfileModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-md overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" onClick={handleCancelEdit} className="rounded-full h-8 w-8">
-                  <X className="h-5 w-5" />
-                </Button>
-                <h2 className="text-xl font-bold">Edit profile</h2>
-              </div>
-              <Button
-                onClick={handleEditProfileSave}
-                className="bg-black hover:bg-gray-800 text-white rounded-full px-4 py-1.5 text-sm font-semibold"
-              >
-                Save
-              </Button>
-            </div>
-
-            {/* Cover Image */}
-            <div className="relative h-36 bg-gray-300">
-              {!tempCoverRemoved && tempCoverImage && tempCoverImage !== "/placeholder.svg?height=192&width=768" ? (
-                <img src={tempCoverImage || "/placeholder.svg"} alt="Cover" className="w-full h-full object-cover" />
-              ) : (
-                <div
-                  className="w-full h-full"
-                  style={{
-                    background:
-                      tempAutoGradient || "linear-gradient(to bottom left, rgb(59, 130, 246), rgb(139, 92, 246))",
-                  }}
-                ></div>
-              )}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => tempCoverInputRef.current?.click()}
-                  className="bg-gray-800/60 hover:bg-gray-800/80 text-white rounded-full h-10 w-10"
-                >
-                  <Upload className="h-5 w-5" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Avatar */}
-            <div className="px-4 relative">
-              <div className="relative -mt-12 mb-4 w-24 h-24">
-                <div className="w-24 h-24 rounded-full bg-gray-300 border-4 border-white overflow-hidden">
-                  <Avatar className="w-full h-full">
-                    <AvatarImage src={tempAvatarImage || "/placeholder.svg"} />
-                    <AvatarFallback className="text-2xl bg-gray-300"></AvatarFallback>
-                  </Avatar>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute -bottom-1 -right-1 bg-gray-800/80 hover:bg-gray-800 text-white rounded-full h-8 w-8 border-2 border-white"
-                  onClick={() => tempAvatarInputRef.current?.click()}
-                >
-                  <Upload className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Form Fields */}
-            <div className="p-4 space-y-4">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Name
-                </label>
-                <Input
-                  id="name"
-                  value={editingName}
-                  onChange={(e) => setEditingName(e.target.value)}
-                  className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  placeholder="breno henrique"
-                />
-              </div>
-              <div>
-                <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
-                  Bio
-                </label>
-                <textarea
-                  id="bio"
-                  value={editingBio}
-                  onChange={(e) => setEditingBio(e.target.value)}
-                  className="w-full h-20 p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 resize-none"
-                  placeholder="Tell us about yourself..."
-                />
-              </div>
-              <div>
-                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-                  Location
-                </label>
-                <Input
-                  id="location"
-                  value={editingLocation}
-                  onChange={(e) => setEditingLocation(e.target.value)}
-                  className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  placeholder="Where are you located?"
-                />
-              </div>
-              <div>
-                <label htmlFor="website" className="block text-sm font-medium text-gray-700 mb-1">
-                  Website
-                </label>
-                <Input
-                  id="website"
-                  value={editingWebsite}
-                  onChange={(e) => setEditingWebsite(e.target.value)}
-                  className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  placeholder="Your website URL"
-                />
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Remove Cover Confirmation Modal */}
-      {showRemoveCoverModal && (
+      {/* Modal de Edição de Perfil */}
+      {showEditProfileModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md">
-            <CardContent className="p-6">
-              <div className="text-center space-y-4">
-                <h3 className="text-lg font-medium text-gray-900">Remover imagem de capa?</h3>
-                <p className="text-gray-600">
-                  Você tem certeza que deseja remover sua imagem de capa? Esta ação não pode ser desfeita.
-                </p>
-                <div className="flex items-center justify-center gap-3 pt-4">
-                  <Button variant="outline" onClick={() => setShowRemoveCoverModal(false)}>
-                    Cancelar
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                  <Button variant="ghost" size="sm" onClick={handleCancelEdit}>
+                    <X className="w-5 h-5" />
                   </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => {
-                      setTempCoverRemoved(true)
-                      setShowRemoveCoverModal(false)
-                    }}
-                  >
-                    Remover
-                  </Button>
+                  <h2 className="text-xl font-bold text-gray-900">Edit profile</h2>
+                </div>
+                <Button
+                  onClick={handleEditProfileSave}
+                  className="bg-black text-white hover:bg-gray-800 rounded-full px-6"
+                >
+                  Save
+                </Button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Cover Image */}
+                <div className="relative h-48 rounded-lg overflow-hidden bg-gray-200">
+                  {!tempCoverRemoved && tempCoverImage && tempCoverImage !== "/placeholder.svg?height=192&width=768" ? (
+                    <img
+                      src={tempCoverImage || "/placeholder.svg"}
+                      alt="Cover"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full"
+                      style={{
+                        background:
+                          tempAutoGradient ||
+                          autoGradient ||
+                          "linear-gradient(to bottom left, rgb(156, 163, 175), rgb(107, 114, 128))",
+                      }}
+                    ></div>
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-12 h-12 rounded-full bg-black/50 hover:bg-black/60 border-0 p-0"
+                      onClick={() => tempCoverInputRef.current?.click()}
+                    >
+                      <Upload className="w-5 h-5 text-white" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Avatar */}
+                <div className="relative -mt-20 ml-6">
+                  <div className="relative w-32 h-32">
+                    <Avatar className="w-full h-full border-4 border-white shadow-lg">
+                      <AvatarImage src={tempAvatarImage || "/placeholder.svg"} />
+                      <AvatarFallback></AvatarFallback>
+                    </Avatar>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="absolute inset-0 w-full h-full rounded-full bg-black/50 hover:bg-black/60 border-0 opacity-0 hover:opacity-100 transition-opacity"
+                      onClick={() => tempAvatarInputRef.current?.click()}
+                    >
+                      <Upload className="w-6 h-6 text-white" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Form Fields */}
+                <div className="space-y-4 pt-4">
+                  {/* Nome */}
+                  <div className="space-y-2">
+                    <label htmlFor="name" className="text-sm font-medium text-gray-700">
+                      Name
+                    </label>
+                    <Input
+                      id="name"
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      placeholder="Enter your name"
+                    />
+                  </div>
+
+                  {/* Bio */}
+                  <div className="space-y-2">
+                    <label htmlFor="bio" className="text-sm font-medium text-gray-700">
+                      Bio
+                    </label>
+                    <textarea
+                      id="bio"
+                      value={editingBio}
+                      onChange={(e) => setEditingBio(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg p-3 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      placeholder="Tell us about yourself"
+                    />
+                  </div>
+
+                  {/* Localização */}
+                  <div className="space-y-2">
+                    <label htmlFor="location" className="text-sm font-medium text-gray-700">
+                      Location
+                    </label>
+                    <Input
+                      id="location"
+                      value={editingLocation}
+                      onChange={(e) => setEditingLocation(e.target.value)}
+                      className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      placeholder="Where are you located?"
+                    />
+                  </div>
+
+                  {/* Website */}
+                  <div className="space-y-2">
+                    <label htmlFor="website" className="text-sm font-medium text-gray-700">
+                      Website
+                    </label>
+                    <Input
+                      id="website"
+                      value={editingWebsite}
+                      onChange={(e) => setEditingWebsite(e.target.value)}
+                      className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      placeholder="Your website URL"
+                    />
+                  </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Avatar Preview Modal */}
+      {/* Modal de Confirmação de Remoção de Capa */}
+      {showRemoveCoverModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl w-full max-w-md p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Remover imagem de capa?</h3>
+            <p className="text-gray-600 mb-6">
+              Sua capa será substituída por um gradiente automático baseado na sua foto de perfil.
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowRemoveCoverModal(false)}>
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setTempCoverRemoved(true)
+                  setShowRemoveCoverModal(false)
+                }}
+              >
+                Remover
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Visualização de Avatar */}
       {showAvatarPreview && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
-          <div className="relative max-w-2xl max-h-[90vh]">
-            <img
-              src={avatarImage || "/placeholder.svg"}
-              alt="Profile"
-              className="max-w-full max-h-[80vh] object-contain rounded-lg"
-            />
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="relative w-full max-w-lg">
             <Button
               variant="outline"
               size="sm"
-              className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white border-none"
+              className="absolute top-0 right-0 -mt-12 bg-white/10 hover:bg-white/20 text-white border-white/20"
               onClick={() => setShowAvatarPreview(false)}
             >
               <X className="w-5 h-5" />
             </Button>
+            <img src={avatarImage || "/placeholder.svg"} alt="Avatar" className="w-full h-auto rounded-lg shadow-2xl" />
           </div>
         </div>
       )}
 
-      {/* YouTube Modal */}
+      {/* Modal do YouTube */}
       {showYouTubeModal && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
-          <div className="relative w-full max-w-5xl">
+          <div className="relative w-full max-w-4xl">
             <Button
               variant="outline"
               size="sm"
-              className="absolute -top-12 right-0 bg-black/50 hover:bg-black/70 text-white border-none"
+              className="absolute top-0 right-0 -mt-12 bg-white/10 hover:bg-white/20 text-white border-white/20"
               onClick={closeYouTubeModal}
             >
               <X className="w-5 h-5" />
             </Button>
-
             <div className="bg-white rounded-xl overflow-hidden">
               <div className="aspect-video">
                 <iframe
@@ -2859,107 +2707,90 @@ export default function ProfilePage() {
                   className="w-full h-full"
                 ></iframe>
               </div>
-
-              <div className="p-6">
-                <div className="space-y-4">
-                  <div>
-                    <h2 className="text-xl font-bold text-gray-900">{currentVideoData?.title || "Vídeo"}</h2>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src={currentVideoData?.author?.avatar || avatarImage || "/placeholder.svg"} />
-                        <AvatarFallback></AvatarFallback>
-                      </Avatar>
+              {currentVideoData && (
+                <div className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={currentVideoData.author.avatar || "/placeholder.svg"} />
+                      <AvatarFallback></AvatarFallback>
+                    </Avatar>
+                    <div>
                       <div className="flex items-center gap-1">
-                        <span className="text-sm font-medium text-gray-900">
-                          {currentVideoData?.author?.name || userProfile.name}
-                        </span>
-                        {currentVideoData?.author?.verified && <Verified className="w-3 h-3 text-blue-500" />}
+                        <span className="font-medium">{currentVideoData.author.name}</span>
+                        {currentVideoData.author.verified && <Verified className="w-4 h-4 text-blue-500" />}
+                      </div>
+                      <div className="text-sm text-gray-500">{currentVideoData.timestamp}</div>
+                    </div>
+                  </div>
+                  <h2 className="text-xl font-bold mb-2">{currentVideoData.title}</h2>
+                  <p className="text-gray-700 mb-4">{currentVideoData.content}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1">
+                        <Eye className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-600">{formatNumber(currentVideoData.stats.views)}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Star className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-600">{formatNumber(currentVideoData.stats.likes)}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MessageCircle className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-600">{formatNumber(currentVideoData.stats.comments)}</span>
                       </div>
                     </div>
-                  </div>
-
-                  <p className="text-gray-700">{currentVideoData?.content || ""}</p>
-
-                  <div className="flex items-center gap-6 py-4 border-t border-b border-gray-100">
-                    <div className="flex items-center gap-1">
-                      <Eye className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-700">
-                        {formatNumber(currentVideoData?.stats?.views || 0)} visualizações
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Heart className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-700">
-                        {formatNumber(currentVideoData?.stats?.likes || 0)} curtidas
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <MessageCircle className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-700">
-                        {formatNumber(currentVideoData?.stats?.comments || 0)} comentários
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Share className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-700">
-                        {formatNumber(currentVideoData?.stats?.shares || 0)} compartilhamentos
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm">
+                        <Star className="w-4 h-4 mr-2" />
+                        Curtir
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Share className="w-4 h-4 mr-2" />
+                        Compartilhar
+                      </Button>
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
+                  <div className="mt-6 border-t border-gray-100 pt-6">
+                    <h3 className="font-semibold mb-4">
+                      Comentários ({formatNumber(currentVideoData.stats.comments)})
+                    </h3>
+                    <div className="flex gap-3 mb-6">
                       <Avatar className="w-8 h-8">
                         <AvatarImage src={avatarImage || "/placeholder.svg"} />
                         <AvatarFallback></AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
                         <Input
-                          placeholder="Adicione um comentário..."
                           value={newComment}
                           onChange={(e) => setNewComment(e.target.value)}
-                          className="border-none focus:ring-0 px-0"
+                          placeholder="Adicione um comentário..."
+                          className="mb-2"
                         />
+                        <div className="flex justify-end">
+                          <Button size="sm" onClick={handleAddComment} disabled={!newComment.trim()}>
+                            Comentar
+                          </Button>
+                        </div>
                       </div>
-                      <Button
-                        size="sm"
-                        onClick={handleAddComment}
-                        disabled={!newComment.trim()}
-                        className="bg-blue-600 hover:bg-blue-700"
-                      >
-                        Comentar
-                      </Button>
                     </div>
 
                     <div className="space-y-4">
-                      {videoComments.map((comment: any) => (
+                      {videoComments.map((comment) => (
                         <div key={comment.id} className="flex gap-3">
                           <Avatar className="w-8 h-8">
                             <AvatarImage src={comment.avatar || "/placeholder.svg"} />
                             <AvatarFallback></AvatarFallback>
                           </Avatar>
-                          <div className="flex-1">
+                          <div>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-gray-900">{comment.user}</span>
+                              <span className="font-medium text-sm">{comment.user}</span>
                               <span className="text-xs text-gray-500">{comment.timestamp}</span>
                             </div>
-                            <p className="text-sm text-gray-700 mt-1">{comment.comment}</p>
-                            <div className="flex items-center gap-4 mt-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-gray-500 hover:text-gray-700 h-auto py-0"
-                              >
-                                <Heart className="w-3 h-3 mr-1" />
-                                <span className="text-xs">{comment.likes}</span>
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-gray-500 hover:text-gray-700 h-auto py-0"
-                              >
-                                <span className="text-xs">Responder</span>
-                              </Button>
+                            <p className="text-gray-800 text-sm mt-1">{comment.comment}</p>
+                            <div className="flex items-center gap-3 mt-2">
+                              <button className="text-xs text-gray-500 hover:text-gray-700">Curtir</button>
+                              <button className="text-xs text-gray-500 hover:text-gray-700">Responder</button>
                             </div>
                           </div>
                         </div>
@@ -2967,14 +2798,11 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
       )}
-
-      {/* Canvas oculto para análise de cores */}
-      <canvas ref={colorAnalysisCanvasRef} className="hidden" width="300" height="300" />
     </div>
   )
 }
