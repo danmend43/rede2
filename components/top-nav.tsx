@@ -169,7 +169,14 @@ export function TopNav() {
   }
 
   const handleSpotifyConnect = () => {
-    const clientId = "384115184ce848c1bf39bdd8d0209f83"
+    // Usar variável de ambiente para o Client ID
+    const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID
+
+    if (!clientId) {
+      console.error("NEXT_PUBLIC_SPOTIFY_CLIENT_ID não configurado")
+      return
+    }
+
     const redirectUri = `${window.location.origin}/api/spotify/callback`
 
     const scopes = [
@@ -485,7 +492,7 @@ export function TopNav() {
                           </h4>
 
                           {/* Spotify */}
-                          <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                          <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-900 rounded-lg">
                             <div className="flex items-center gap-3">
                               <SpotifyIcon className="w-5 h-5 text-green-500" />
                               <div>
@@ -510,7 +517,7 @@ export function TopNav() {
                           </div>
 
                           {/* SoundCloud */}
-                          <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg opacity-50">
+                          <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-900 rounded-lg opacity-50">
                             <div className="flex items-center gap-3">
                               <SoundCloudIcon className="w-5 h-5 text-orange-500" />
                               <div>
@@ -524,7 +531,7 @@ export function TopNav() {
                           </div>
 
                           {/* Deezer */}
-                          <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg opacity-50">
+                          <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-900 rounded-lg opacity-50">
                             <div className="flex items-center gap-3">
                               <DeezerIcon className="w-5 h-5 text-purple-500" />
                               <div>

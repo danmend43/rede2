@@ -8,11 +8,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Refresh token é obrigatório" }, { status: 400 })
     }
 
-    const clientId = "384115184ce848c1bf39bdd8d0209f83"
-    const clientSecret = "3d496cf3ccfc422b8c0bab8cd5f963aa"
+    // Usar variáveis de ambiente
+    const clientId = process.env.SPOTIFY_CLIENT_ID
+    const clientSecret = process.env.SPOTIFY_CLIENT_SECRET
 
-    if (!clientSecret) {
-      console.error("SPOTIFY_CLIENT_SECRET não configurado")
+    if (!clientId || !clientSecret) {
+      console.error("Variáveis de ambiente do Spotify não configuradas")
       return NextResponse.json({ error: "Configuração do servidor inválida" }, { status: 500 })
     }
 

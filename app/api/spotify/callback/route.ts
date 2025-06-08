@@ -17,14 +17,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Trocar código por token
-    const clientId = "384115184ce848c1bf39bdd8d0209f83"
-    const clientSecret = "3d496cf3ccfc422b8c0bab8cd5f963aa"
+    // Usar variáveis de ambiente
+    const clientId = process.env.SPOTIFY_CLIENT_ID
+    const clientSecret = process.env.SPOTIFY_CLIENT_SECRET
     const redirectUri = `${request.nextUrl.origin}/api/spotify/callback`
 
-    if (!clientSecret) {
-      console.error("SPOTIFY_CLIENT_SECRET não configurado")
-      return NextResponse.redirect(new URL("/?spotify_error=server_error", request.url))
+    if (!clientId || !clientSecret) {
+      console.error("Variáveis de ambiente do Spotify não configuradas")
+      return NextResponse.redirect(new URL("/?spotify_error=server_config", request.url))
     }
 
     const tokenResponse = await fetch("https://accounts.spotify.com/api/token", {

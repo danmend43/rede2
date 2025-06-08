@@ -296,6 +296,21 @@ export function RightSidebar({ className, ...props }: RightSidebarProps) {
           </Card>
         )}
 
+        {/* Mensagem quando Spotify está conectado mas não há música tocando */}
+        {isSpotifyConnected && !currentSpotifyTrack && (
+          <Card className="border border-gray-200 dark:border-gray-900 bg-white dark:bg-black rounded-2xl">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <SpotifyIcon className="w-6 h-6 text-green-500" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">Spotify conectado</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Toque uma música para vê-la aqui</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Outras sugestões */}
         <Card className="border border-gray-200 dark:border-gray-900 bg-white dark:bg-black rounded-2xl">
           <CardHeader>
