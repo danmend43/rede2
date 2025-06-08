@@ -79,7 +79,7 @@ const SoundCloudIcon = ({ className }: { className?: string }) => (
 // Componente de ícone do Deezer
 const DeezerIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M18.81 8.86h2.915v1.31H18.81zm0 2.19h2.915v1.31H18.81zm0 2.19h2.915v1.31H18.81zm0 2.19h2.915v1.31H18.81zm-3.65-6.57h2.915v1.31H15.16zm0 2.19h2.915v1.31H15.16zm0 2.19h2.915v1.31H15.16zm0 2.19h2.915v1.31H15.16zm0 2.19h2.915v1.31H15.16zm-3.65-8.76h2.915v1.31H11.51zm0 2.19h2.915v1.31H11.51zm0 2.19h2.915v1.31H11.51zm0 2.19h2.915v1.31H11.51zm0 2.19h2.915v1.31H11.51zm0 2.19h2.915v1.31H11.51zm-3.65-10.95h2.915v1.31H7.86zm0 2.19h2.915v1.31H7.86zm0 2.19h2.915v1.31H7.86zm0 2.19h2.915v1.31H7.86zm0 2.19h2.915v1.31H7.86zm0 2.19h2.915v1.31H7.86zm0 2.19h2.915v1.31H7.86zm-3.65-13.14h2.915v1.31H4.21zm0 2.19h2.915v1.31H4.21zm0 2.19h2.915v1.31H4.21zm0 2.19h2.915v1.31H4.21zm0 2.19h2.915v1.31H4.21zm0 2.19h2.915v1.31H4.21zm0 2.19h2.915v1.31H4.21zm0 2.19h2.915v1.31H4.21z" />
+    <path d="M18.81 8.86h2.915v1.31H18.81zm0 2.19h2.915v1.31H18.81zm0 2.19h2.915v1.31H18.81zm0 2.19h2.915v1.31H18.81zm-3.65-6.57h2.915v1.31H15.16zm0 2.19h2.915v1.31H15.16zm0 2.19h2.915v1.31H15.16zm0 2.19h2.915v1.31H15.16zm0 2.19h2.915v1.31H15.16zm-3.65-8.76h2.915v1.31H11.51zm0 2.19h2.915v1.31H11.51zm0 2.19h2.915v1.31H11.51zm0 2.19h2.915v1.31H11.51zm0 2.19h2.915v1.31H11.51zm-3.65-10.95h2.915v1.31H7.86zm0 2.19h2.915v1.31H7.86zm0 2.19h2.915v1.31H7.86zm0 2.19h2.915v1.31H7.86zm0 2.19h2.915v1.31H7.86zm0 2.19h2.915v1.31H7.86zm-3.65-13.14h2.915v1.31H4.21zm0 2.19h2.915v1.31H4.21zm0 2.19h2.915v1.31H4.21zm0 2.19h2.915v1.31H4.21zm0 2.19h2.915v1.31H4.21zm0 2.19h2.915v1.31H4.21zm0 2.19h2.915v1.31H4.21z" />
   </svg>
 )
 
@@ -126,8 +126,27 @@ export function TopNav() {
     }
 
     // Verificar se o Spotify está conectado
-    const spotifyToken = localStorage.getItem("spotify_token")
-    setIsSpotifyConnected(!!spotifyToken)
+    const checkSpotifyConnection = () => {
+      const spotifyToken = localStorage.getItem("spotify_token")
+      setIsSpotifyConnected(!!spotifyToken)
+    }
+
+    checkSpotifyConnection()
+
+    // Escutar mudanças no localStorage
+    const handleStorageChange = () => {
+      checkSpotifyConnection()
+    }
+
+    window.addEventListener("storage", handleStorageChange)
+
+    // Verificar periodicamente (para mudanças na mesma aba)
+    const interval = setInterval(checkSpotifyConnection, 1000)
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange)
+      clearInterval(interval)
+    }
   }, [])
 
   const applyTheme = (newTheme: Theme) => {
