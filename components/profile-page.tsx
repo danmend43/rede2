@@ -36,10 +36,10 @@ export default function ProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false)
   const [activeTab, setActiveTab] = useState<TabType>("overview")
   const [profileData, setProfileData] = useState({
-    name: "Akira Tanaka",
-    bio: "🚀 Full-Stack Developer & UI/UX Designer\n💻 Criando experiências digitais incríveis com React, Next.js e TypeScript",
+    name: "Dan mend",
+    bio: "🚀 Desenvolvedor Back-end com Go | Experiência em aplicações web com Next.js, React e TypeScript",
     location: "São Paulo, Brasil",
-    website: "akira-dev.com",
+    website: "dan-dev.com",
     profileImage: "/images/new-default-avatar.png",
     coverImage: "",
     coverGradient: "#9CA3AF",
@@ -334,8 +334,7 @@ export default function ProfilePage() {
                         <Award className="w-4 h-4 text-white" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-gray-900 dark:text-white">Ranking Global</h4>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Top 2.5%</p>
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-white">Ranking Global</h4> 
                       </div>
                     </div>
 
@@ -343,11 +342,7 @@ export default function ProfilePage() {
                       <div>
                         <p className="text-2xl font-bold text-gray-900 dark:text-white">#{userStats.globalRank}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">Posição atual</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-green-600 dark:text-green-400">↗️ +23</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">esta semana</p>
-                      </div>
+                      </div> 
                     </div>
                   </div>
 
@@ -366,10 +361,7 @@ export default function ProfilePage() {
                       <div>
                         <p className="text-2xl font-bold text-orange-500 dark:text-orange-400">{userStats.streak}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">dias seguidos</p>
-                      </div>
-                      <div className="px-2 py-1 rounded-full bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-300 text-xs font-medium">
-                        🔥 Em chamas!
-                      </div>
+                      </div> 
                     </div>
                   </div>
                 </div>
@@ -423,7 +415,7 @@ export default function ProfilePage() {
                       </Avatar>
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="font-bold text-gray-900 dark:text-white">Akira Tanaka</p>
+                          <p className="font-bold text-gray-900 dark:text-white">Dan mend</p>
                           <span className="text-gray-300 dark:text-gray-600">•</span>
                           <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${getLevelColor(25)}`}>
                             Lv.25
@@ -431,7 +423,7 @@ export default function ProfilePage() {
                           <p className="text-gray-500 pl-5 dark:text-gray-400">{post.time}</p>
                         </div>
                         <div className="flex items-center gap-2 mt-1">
-                          <p className="text-gray-500 dark:text-gray-400 text-sm">@akira_dev</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-sm">@dan_dev</p>
                         </div>
                       </div>
                     </div>
@@ -631,7 +623,7 @@ export default function ProfilePage() {
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{profileData.name}</h1>
                 <img src="/images/verificar.png" alt="Verificado" className="w-6 h-6" />
               </div>
-              <p className="text-gray-500 dark:text-gray-400">@akira_dev</p>
+              <p className="text-gray-500 dark:text-gray-400">@dan_dev</p>
             </div>
 
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{profileData.bio}</p>

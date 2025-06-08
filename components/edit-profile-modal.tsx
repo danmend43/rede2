@@ -223,17 +223,15 @@ export function EditProfileModal({ isOpen, onClose, onSave, initialData }: EditP
       >
         <div
           onClick={(e) => e.stopPropagation()}
+          className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden shadow-2xl"
           style={{
             pointerEvents: "auto",
             width: "100%",
             maxWidth: "512px",
             maxHeight: "90vh",
-            backgroundColor: "white",
-            borderRadius: "16px",
           }}
-          className="dark:bg-black border border-gray-200 dark:border-gray-700"
         >
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-black">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
@@ -259,7 +257,7 @@ export function EditProfileModal({ isOpen, onClose, onSave, initialData }: EditP
               maxHeight: "calc(90vh - 80px)",
               overflowY: "auto",
             }}
-            className="bg-white dark:bg-black [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-100 dark:[&::-webkit-scrollbar-track]:bg-gray-800 [&::-webkit-scrollbar-thumb]:bg-gray-300 dark:[&::-webkit-scrollbar-thumb]:bg-gray-600 [&::-webkit-scrollbar-thumb]:rounded-full"
+            className="[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-100 dark:[&::-webkit-scrollbar-track]:bg-gray-800 [&::-webkit-scrollbar-thumb]:bg-gray-300 dark:[&::-webkit-scrollbar-thumb]:bg-gray-600 [&::-webkit-scrollbar-thumb]:rounded-full"
           >
             <div className="relative">
               <div

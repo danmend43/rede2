@@ -318,7 +318,7 @@ export function RightSidebar({ className, ...props }: RightSidebarProps) {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Conteúdo adicional pode ser adicionado aqui no futuro.
+              Aqui eu coloco alguma coisa, to sem ideias..
             </p>
           </CardContent>
         </Card>
