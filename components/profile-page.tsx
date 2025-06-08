@@ -113,7 +113,7 @@ export default function ProfilePage() {
     xp: 2450,
     nextLevel: 3000,
     progress: 82,
-    rank: "Desenvolvedor Sênior",
+    rank: "Ferro",
     reputation: 4850,
     contributions: 187,
     streak: 14,
