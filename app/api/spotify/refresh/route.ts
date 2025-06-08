@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     }
 
     const clientId = "384115184ce848c1bf39bdd8d0209f83"
-    const clientSecret = "3d496cf3ccfc422b8c0bab8cd5f963aa"
+    const clientSecret = process.env.SPOTIFY_CLIENT_SECRET
 
     if (!clientSecret) {
       console.error("SPOTIFY_CLIENT_SECRET não configurado")

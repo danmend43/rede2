@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   try {
     // Trocar código por token
     const clientId = "384115184ce848c1bf39bdd8d0209f83"
-    const clientSecret = "3d496cf3ccfc422b8c0bab8cd5f963aa"
+    const clientSecret = process.env.SPOTIFY_CLIENT_SECRET
     const redirectUri = `${request.nextUrl.origin}/api/spotify/callback`
 
     if (!clientSecret) {

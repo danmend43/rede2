@@ -1,7 +1,7 @@
 "use client"
 
 // Interface para cores vibrantes
-export interface VibrantColor {
+interface VibrantColor {
   r: number
   g: number
   b: number
@@ -361,20 +361,6 @@ export class SmartColorExtractor {
       }
     }
     return { h: h * 360, s, v }
-  }
-
-  // Método para extrair cores simples (compatibilidade com código anterior)
-  static extractColors(
-    imageData: ImageData,
-  ): Array<{ r: number; g: number; b: number; population: number; hsl: [number, number, number] }> {
-    const vibrantColors = this.extractVibrantColors(imageData)
-    return vibrantColors.map((color) => ({
-      r: color.r,
-      g: color.g,
-      b: color.b,
-      population: color.population,
-      hsl: [color.hue, color.saturation, color.brightness] as [number, number, number],
-    }))
   }
 }
 
