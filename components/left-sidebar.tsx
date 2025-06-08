@@ -1,7 +1,7 @@
 "use client"
 import type React from "react"
 import { cn } from "@/lib/utils"
-import { Calendar, Home, LayoutDashboard, Settings, TrendingUp, Users } from "lucide-react"
+import { Calendar, CircleUserRound, Clapperboard, Home, LayoutDashboard, Settings, TrendingUp, User, Users } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
@@ -33,8 +33,7 @@ export function LeftSidebar({ className, ...props }: LeftSidebarProps) {
         <nav className="space-y-2">
           <Link
             href="#"
-            className="flex items-center gap-4 rounded-2xl px-4 py-3 text-white font-medium transition-all"
-            style={{ backgroundColor: primaryColor }}
+             className="flex items-center gap-4 rounded-2xl px-4 py-3 text-gray-600 dark:text-gray-300 font-medium transition-all hover:bg-gray-100 dark:hover:bg-gray-800" 
           >
             <Home className="h-5 w-5" />
             <span>Início</span>
@@ -46,6 +45,15 @@ export function LeftSidebar({ className, ...props }: LeftSidebarProps) {
             <TrendingUp className="h-5 w-5" />
             <span>Tendências</span>
           </Link>
+
+          <Link
+            href="#"
+            className="flex items-center gap-4 rounded-2xl px-4 py-3 text-gray-600 dark:text-gray-300 font-medium transition-all hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            <Clapperboard className="h-5 w-5" />
+            <span>Vídeos</span>
+          </Link>
+
           <Link
             href="#"
             className="flex items-center gap-4 rounded-2xl px-4 py-3 text-gray-600 dark:text-gray-300 font-medium transition-all hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -62,10 +70,11 @@ export function LeftSidebar({ className, ...props }: LeftSidebarProps) {
           </Link>
           <Link
             href="#"
-            className="flex items-center gap-4 rounded-2xl px-4 py-3 text-gray-600 dark:text-gray-300 font-medium transition-all hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="flex items-center gap-4 rounded-2xl px-4 py-3 text-white font-medium transition-all"
+            style={{ backgroundColor: primaryColor }}
           >
-            <LayoutDashboard className="h-5 w-5" />
-            <span>Dashboard</span>
+            <CircleUserRound className="h-5 w-5" />
+            <span>Perfil</span>
           </Link>
           <Link
             href="#"
